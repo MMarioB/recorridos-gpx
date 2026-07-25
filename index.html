@@ -139,16 +139,31 @@ label.chk input{margin-top:3px;width:18px;height:18px;accent-color:var(--linea)}
   <section id="v-tramos" class="view">
     <div class="scroll">
       <div class="intro">Maps enruta entre puntos, no sigue trazas. Estas anclas la obligan a
-        reproducir tu recorrido. <b>Prueba primero la ruta completa</b>: si te la acepta entera,
-        te olvidas de los tramos.</div>
+        reproducir tu recorrido, pero el enlace tiene un techo de puntos que aún no conocemos.
+        <b>Empieza por el diagnóstico.</b></div>
+
       <div class="sec">
-        <h2>Ruta completa</h2>
-        <p id="pTodo"></p>
+        <h2>Diagnóstico: qué rompe el enlace</h2>
+        <p>Cambié dos cosas a la vez, así que hay que aislarlas. Abre las tres y dime cuáles
+          cargan. <b>La A es la configuración que ya te funcionó</b>, así que debería ir sí o sí.</p>
         <div class="btns">
-          <button class="btn" id="bTodo">Abrir ruta completa</button>
-          <button class="btn alt" id="bCopiaTodo">Copiar enlace</button>
+          <button class="btn alt" id="dA">A · 70 puntos, sin dirflg</button>
+          <button class="btn alt" id="dB">B · 70 puntos, con dirflg</button>
+          <button class="btn alt" id="dC">C · todos, sin dirflg</button>
         </div>
-        <div id="msgTodo"></div>
+        <div id="msgDiag"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Enlaces largos</h2>
+        <p id="pLargos"></p>
+        <div id="largos" class="btns"></div>
+      </div>
+
+      <div class="sec" style="padding-bottom:6px">
+        <h2>Tramos cortos, garantizados</h2>
+        <p>Formato <span class="mono">api=1</span>, 9 paradas por enlace. Es el que te carga
+          siempre y el único donde <span class="mono">avoid=highways</span> está documentado.</p>
       </div>
       <div id="lista"></div>
     </div>
@@ -163,6 +178,17 @@ label.chk input{margin-top:3px;width:18px;height:18px;accent-color:var(--linea)}
             ninguna. Sin esto, Maps coge la M-30 o la A-6 en cuanto le dejas un hueco.</span></label>
         <label class="chk"><input type="checkbox" id="noPeaje">
           <span>Prohibir peajes.</span></label>
+      </div>
+
+      <div class="sec">
+        <h2>Puntos por enlace</h2>
+        <p>El techo que aguanta Maps en el formato largo. Con 71 te cargó; con 104 no.
+          Baja esto hasta que carguen los enlaces largos, pero <b>no lo bajes de 70</b>: por
+          debajo, el hueco máximo vuelve a pasar de 1,9 km y Maps se te va otra vez por la A-6.</p>
+        <label class="num">Máximo
+          <input id="porEnlace" type="range" min="20" max="110" step="5" value="60">
+          <span class="mono" id="vPorEnlace">60</span></label>
+        <div class="ok" id="largosMsg"></div>
       </div>
 
       <div class="sec">
@@ -306,11 +332,9 @@ function calcular(){
   $('#vHueco').textContent = gap + ' m';
   const hmax = Math.max(...wp.slice(1).map((w,i) => w.s - wp[i].s));
   $('#densMsg').textContent = `${wp.length} anclas · hueco mayor ${Math.round(hmax)} m · `
-    + `${tramos.length} tramos · enlace completo de ${urlTodo().length} caracteres.`;
+    + `${tramos.length} tramos cortos.`;
   $('#cab').textContent = wp.length + ' anclas';
-  $('#pTodo').innerHTML = `Los <b>${wp.length}</b> puntos en un solo enlace de `
-    + `${urlTodo().length} caracteres. Si Maps te da más de ${km(largo()*1.15)} km, se ha desviado.`;
-  pintarTramos(); pintarRiesgos(); pintarMapa();
+  pintarTramos(); pintarLargos(); pintarRiesgos(); pintarMapa();
 }
 
 /* ---------------------------------------------------------------
@@ -333,12 +357,64 @@ function urlTramo(seg){
   if (a.length) u += `&avoid=${a.join('%2C')}`;
   return u;
 }
-function urlTodo(){
+/* formato de ruta: admite muchos más puntos, pero tiene un techo desconocido
+   y no acepta avoid. dirflg es heredado y está sin confirmar: por eso va aparte. */
+function urlPath(pts, conFlag){
   let f = '';
-  if ($('#noAuto').checked) f += 'h';
-  if ($('#noPeaje').checked) f += 't';
-  return 'https://www.google.com/maps/dir/' + wp.map(ll).join('/')
+  if (conFlag){
+    if ($('#noAuto').checked) f += 'h';
+    if ($('#noPeaje').checked) f += 't';
+  }
+  return 'https://www.google.com/maps/dir/' + pts.map(ll).join('/')
        + (f ? '?dirflg=' + f : '');
+}
+
+/* cuánto se aparta la traza de la recta entre dos anclas */
+function desvioEntre(s0, s1){
+  const A = px(enS(s0)), B = px(enS(s1));
+  const dx = B[0]-A[0], dy = B[1]-A[1], L2 = dx*dx+dy*dy;
+  let mx = 0; const n = Math.max(2, Math.round((s1-s0)/25));
+  for (let k=0;k<=n;k++){
+    const p = px(enS(s0 + (s1-s0)*k/n));
+    let t = L2 ? ((p[0]-A[0])*dx + (p[1]-A[1])*dy)/L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    mx = Math.max(mx, Math.hypot(p[0]-(A[0]+t*dx), p[1]-(A[1]+t*dy)));
+  }
+  return mx;
+}
+/* quita anclas hasta el presupuesto, sacrificando siempre la menos necesaria */
+function adelgazar(lista, budget){
+  const L = lista.slice();
+  while (L.length > budget){
+    let peor = null;
+    for (let i=1;i<L.length-1;i++){
+      const c = desvioEntre(L[i-1].s, L[i+1].s);
+      if (peor === null || c < peor[0]) peor = [c, i];
+    }
+    L.splice(peor[1], 1);
+  }
+  return L;
+}
+/* parte las anclas en trozos del tamaño dado, solapando uno para no dejar huecos */
+function trozos(budget){
+  const out = [];
+  for (let i=0;i<wp.length-1;i+=budget-1)
+    out.push(wp.slice(i, Math.min(i+budget, wp.length)));
+  return out;
+}
+
+function pintarLargos(){
+  const b = +$('#porEnlace').value, ts = trozos(b);
+  $('#vPorEnlace').textContent = b;
+  $('#pLargos').innerHTML = `Formato de ruta, densidad completa (${wp.length} anclas) repartida `
+    + `en <b>${ts.length} ${ts.length===1?'enlace':'enlaces'}</b>. No admite prohibir autovías, `
+    + `pero con las anclas juntas no le hace falta.`;
+  $('#largos').innerHTML = ts.map((t,i) =>
+    `<button class="btn" onclick="window.open(urlPath(trozos(${b})[${i}],false),'_blank')">
+      ${ts.length===1 ? 'Abrir ruta' : 'Parte '+(i+1)} · km ${km(t[0].s)}–${km(t[t.length-1].s)}
+     </button>`).join('');
+  $('#largosMsg').textContent = `${ts.length} enlaces de hasta ${b} puntos `
+    + `(~${32 + b*19} caracteres cada uno).`;
 }
 
 function pintarTramos(){
@@ -375,15 +451,21 @@ function anclaEn(s){
   manuales.sort((a,b)=>a-b); calcular(); guardar();
 }
 
-$('#bTodo').onclick = () => window.open(urlTodo(), '_blank');
-$('#bCopiaTodo').onclick = async () => {
-  try{ await navigator.clipboard.writeText(urlTodo());
-    $('#msgTodo').innerHTML = '<div class="ok">Enlace copiado.</div>'; }
-  catch(e){ $('#msgTodo').innerHTML = '<div class="ok">No se pudo copiar; usa el otro botón.</div>'; }
-};
+function diag(budget, conFlag, etiqueta){
+  const pts = budget >= wp.length ? wp : adelgazar(wp, budget);
+  const u = urlPath(pts, conFlag);
+  $('#msgDiag').innerHTML = `<div class="ok">${etiqueta}: ${pts.length} puntos, `
+    + `${u.length} caracteres. Si carga, apunta cuántos km te da: tu recorrido son `
+    + `${km(largo())} km.</div>`;
+  window.open(u, '_blank');
+}
+$('#dA').onclick = () => diag(70, false, 'A · sin dirflg');
+$('#dB').onclick = () => diag(70, true,  'B · con dirflg');
+$('#dC').onclick = () => diag(wp.length, false, 'C · densidad completa');
 $('#bLimpia').onclick = () => { manuales = []; calcular(); guardar(); };
 ['#noAuto','#noPeaje'].forEach(s => $(s).onchange = () => { calcular(); guardar(); });
 ['#desvio','#hueco'].forEach(s => $(s).oninput = () => { calcular(); guardar(); });
+$('#porEnlace').oninput = () => { pintarLargos(); guardar(); };
 
 /* ---------------- mapa ---------------- */
 let map, linea, marcas, yo, sigo = true, watch = null, modoAncla = false;
@@ -534,7 +616,7 @@ function simplificar(P, eps){
 async function guardar(){
   try{ if (window.storage) await window.storage.set('seguir-recorrido', JSON.stringify({
     T, hechos, manuales, nom: $('#nom').textContent,
-    desvio: $('#desvio').value, hueco: $('#hueco').value,
+    desvio: $('#desvio').value, hueco: $('#hueco').value, porEnlace: $('#porEnlace').value,
     noAuto: $('#noAuto').checked, noPeaje: $('#noPeaje').checked })); }catch(e){}
 }
 async function cargar(){
@@ -546,6 +628,7 @@ async function cargar(){
         hechos = d.hechos || {}; manuales = d.manuales || [];
         if (d.desvio) $('#desvio').value = d.desvio;
         if (d.hueco) $('#hueco').value = d.hueco;
+        if (d.porEnlace) $('#porEnlace').value = d.porEnlace;
         if (d.noAuto !== undefined) $('#noAuto').checked = d.noAuto;
         if (d.noPeaje !== undefined) $('#noPeaje').checked = d.noPeaje;
         if (d.T && d.T.length > 1){ setTrack(d.T, d.nom); return true; }
