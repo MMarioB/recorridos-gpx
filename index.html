@@ -435,7 +435,7 @@ function simplificar(P, eps){
   return rec(0, P.length-1);
 }
 
-/* ---- guardado ---- */
+/* --- guardado --- */
 async function guardar(){
   try{ if (window.storage) await window.storage.set('seguir-recorrido',
     JSON.stringify({T, hechos, ang:$('#ang').value, nom:$('#nom').textContent})); }catch(e){}
