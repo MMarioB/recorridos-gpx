@@ -1,0 +1,462 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Seguir recorrido</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --paper:#EEF1F4; --panel:#FFF; --ink:#0E1A24; --ink-2:#4B5C6B;
+  --linea:#0057A8; --linea-d:#003B75; --ambar:#FFB000; --ambar-d:#7A5200;
+  --verde:#12734A; --rojo:#B3301C; --rail:#CFD8E0; --r:3px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--paper);color:var(--ink);
+  font:400 15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.mono{font-family:"IBM Plex Mono",monospace}
+:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
+
+#app{max-width:560px;margin:0 auto;background:var(--panel);min-height:100%;
+  display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--rail)}
+
+/* cabecera */
+header{background:var(--linea);color:#fff;padding:13px 16px 0;flex:0 0 auto;z-index:600}
+.eyebrow{font:600 11px/1 "IBM Plex Sans";letter-spacing:.16em;text-transform:uppercase;
+  opacity:.72;display:flex;justify-content:space-between}
+.km{display:flex;align-items:baseline;gap:7px;margin:3px 0 9px}
+.km b{font:700 44px/.9 "Barlow Condensed";font-variant-numeric:tabular-nums}
+.km s{text-decoration:none;font:600 22px/1 "Barlow Condensed";opacity:.62}
+.km em{font-style:normal;margin-left:auto;text-align:right;font:500 12px/1.35 "IBM Plex Sans";opacity:.85}
+.bar{height:4px;background:rgba(255,255,255,.24);position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--ambar);width:0;transition:width .5s}
+nav{display:flex;background:var(--linea-d)}
+nav button{flex:1;padding:9px 4px 10px;font:600 11px/1 "IBM Plex Sans";letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,255,255,.66);border-bottom:3px solid transparent}
+nav button[aria-current="true"]{color:#fff;border-bottom-color:var(--ambar)}
+
+.view{display:none;flex:1 1 auto;min-height:0}
+.view.on{display:flex;flex-direction:column}
+
+/* seguir */
+#aviso{display:none;background:var(--rojo);color:#fff;padding:11px 16px;
+  font:600 14px/1.35 "IBM Plex Sans"}
+#aviso.on{display:block}
+#mapa{flex:1 1 auto;min-height:300px;background:#DCE3E9}
+.hud{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);
+  border-top:1px solid var(--rail)}
+.hud div{padding:10px 6px 12px;text-align:center;border-right:1px solid #EAEEF2}
+.hud div:last-child{border-right:0}
+.hud span{display:block;font:600 10px/1 "IBM Plex Sans";letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-2);margin-bottom:4px}
+.hud b{font:700 26px/1 "Barlow Condensed";font-variant-numeric:tabular-nums}
+.hud u{text-decoration:none;font:500 11px/1 "IBM Plex Sans";color:var(--ink-2)}
+.mt{flex:0 0 auto;display:flex;gap:7px;padding:9px 12px;border-top:1px solid var(--rail);
+  flex-wrap:wrap}
+.chip{padding:8px 13px;border-radius:100px;background:var(--paper);
+  font:500 13px/1 "IBM Plex Sans";box-shadow:0 0 0 1px var(--rail) inset}
+.chip[aria-pressed="true"]{background:var(--ambar);box-shadow:none;font-weight:600}
+
+/* tramos */
+.scroll{overflow-y:auto;flex:1 1 auto}
+.intro{padding:16px 16px 14px;background:#F7F9FB;border-bottom:1px solid var(--rail);
+  font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.intro b{color:var(--ink)}
+.tr{display:grid;grid-template-columns:46px 1fr;border-bottom:1px solid #EAEEF2}
+.tr .g{position:relative}
+.tr .g::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:4px;
+  transform:translateX(-50%);background:var(--rail)}
+.tr:first-of-type .g::before{top:24px}
+.tr:last-of-type .g::before{bottom:auto;height:24px}
+.tr.done .g::before{background:var(--linea)}
+.tr .g i{position:absolute;left:50%;top:24px;transform:translate(-50%,-50%);
+  width:26px;height:26px;border-radius:50%;background:var(--panel);
+  box-shadow:0 0 0 2px var(--rail) inset;font:700 13px/26px "Barlow Condensed";
+  text-align:center;color:var(--ink-2);font-style:normal}
+.tr.done .g i{background:var(--linea);color:#fff;box-shadow:none}
+.tr.now .g i{background:var(--ambar);color:var(--ambar-d);box-shadow:0 0 0 4px #FFF4DB}
+.tr .c{padding:12px 16px 15px 4px}
+.tr h3{margin:0;font:600 16px/1.25 "IBM Plex Sans"}
+.tr .m{font:400 12px/1.4 "IBM Plex Mono";color:var(--ink-2);margin-top:2px}
+.tr .b{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
+.tr.now{background:#FFFDF6}
+.go{background:var(--linea);color:#fff;padding:13px 18px;border-radius:var(--r);
+  font:600 15px/1 "IBM Plex Sans";flex:1 1 auto}
+.go:active{background:var(--linea-d)}
+.sm{padding:13px 14px;border-radius:var(--r);font:600 14px/1 "IBM Plex Sans";
+  background:#fff;box-shadow:0 0 0 1.5px var(--rail) inset}
+.tr.done .sm.ck{background:var(--linea);color:#fff;box-shadow:none}
+
+/* exportar */
+.sec{padding:18px 16px;border-bottom:1px solid #EAEEF2}
+.sec h2{font:600 12px/1 "IBM Plex Sans";letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-2);margin:0 0 5px}
+.sec p{margin:0 0 12px;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.sec p b{color:var(--ink)}
+ol.pasos{margin:0 0 12px;padding-left:19px;font-size:13.5px;line-height:1.65;color:var(--ink-2)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:11px 15px;border-radius:var(--r);background:var(--ink);color:#fff;
+  font:600 14px/1 "IBM Plex Sans"}
+.btn.alt{background:#fff;color:var(--ink);box-shadow:0 0 0 1.5px var(--rail) inset}
+label.num{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2);margin-bottom:12px}
+label.num input{flex:1 1 auto;max-width:190px}
+.ok{background:#F0F6FB;color:var(--linea-d);padding:11px 13px;border-radius:var(--r);
+  font-size:13px;line-height:1.5;margin-top:12px;box-shadow:0 0 0 1px #C8DCEE inset}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="app">
+  <header>
+    <div class="eyebrow"><span id="nom">Viernes · Pista</span><span id="fecha">24 jul</span></div>
+    <div class="km"><b id="kHecho">0,0</b><s id="kTotal">/ 0 km</s>
+      <em id="sub">Toca Seguir para empezar</em></div>
+    <div class="bar"><i id="barra"></i></div>
+    <nav>
+      <button data-v="seguir" aria-current="true">Seguir</button>
+      <button data-v="tramos">Tramos Maps</button>
+      <button data-v="exp">GPX</button>
+    </nav>
+  </header>
+
+  <section id="v-seguir" class="view on">
+    <div id="aviso"></div>
+    <div id="mapa"></div>
+    <div class="hud">
+      <div><span>Restante</span><b id="hRest">–</b><u> km</u></div>
+      <div><span>Desvío</span><b id="hDesv">–</b><u> m</u></div>
+      <div><span>Velocidad</span><b id="hVel">–</b><u> km/h</u></div>
+    </div>
+    <div class="mt">
+      <button class="chip" id="cGps" aria-pressed="false">Activar GPS</button>
+      <button class="chip" id="cSigo" aria-pressed="true">Centrar en mí</button>
+      <button class="chip" id="cFit">Ver todo</button>
+    </div>
+  </section>
+
+  <section id="v-tramos" class="view">
+    <div class="scroll">
+      <div class="intro">Google Maps no sabe seguir una traza: enruta entre puntos. Para que
+        reproduzca tu recorrido hay que clavarle un punto en cada giro, y solo admite 9 por enlace.
+        De ahí salen estos tramos. <b>Conduce uno, y al terminar abre el siguiente.</b></div>
+      <div id="lista"></div>
+      <div class="sec">
+        <h2>Ruta completa de una vez</h2>
+        <p>Enlace con todos los puntos seguidos. En Maps de escritorio suele tragar; en el móvil
+          depende de la versión. Si funciona, te ahorras los tramos.</p>
+        <div class="btns">
+          <button class="btn" id="bTodo">Abrir ruta completa</button>
+          <button class="btn alt" id="bCopiaTodo">Copiar enlace</button>
+        </div>
+        <div id="msgTodo"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-exp" class="view">
+    <div class="scroll">
+      <div class="sec">
+        <h2>Seguir la traza entera, sin trocear</h2>
+        <p><b>OsmAnd</b> y <b>Organic Maps</b> sí navegan un GPX completo, con voz y sin waypoints.
+          Es lo que estás buscando; Maps no lo hace.</p>
+        <ol class="pasos">
+          <li>Descarga el GPX de abajo.</li>
+          <li>Ábrelo con OsmAnd (o Menú → Configurar mapa → Archivos GPX).</li>
+          <li>Menú → Dirigirse a → <b>Seguir traza</b>, y elige el archivo.</li>
+          <li>Marca "seguir el trazado exacto" cuando lo pregunte.</li>
+        </ol>
+        <div class="btns">
+          <button class="btn" id="bGpx">Descargar GPX</button>
+          <button class="btn alt" id="bKml">Descargar KML</button>
+        </div>
+      </div>
+      <div class="sec">
+        <h2>Densidad de puntos</h2>
+        <p>Sube la sensibilidad si Maps te corta algún giro; bájala para tener menos tramos.</p>
+        <label class="num">Giro mínimo
+          <input id="ang" type="range" min="30" max="70" step="5" value="45">
+          <span class="mono" id="angV">45°</span>
+        </label>
+        <div class="ok" id="densMsg"></div>
+      </div>
+      <div class="sec">
+        <h2>Otro recorrido</h2>
+        <p>Carga cualquier GPX grabado y recalcula todo: mapa, tramos y export.</p>
+        <div class="btns">
+          <label class="btn alt" for="fGpx">Cargar GPX</label>
+          <input id="fGpx" type="file" accept=".gpx,application/gpx+xml" hidden>
+          <button class="btn alt" id="bReset">Volver al del viernes</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* Traza del viernes 24/07, simplificada a 8 m. Formato plano [lat,lon,...] */
+const TRACK_FLAT = [40.45629,-3.69505,40.45624,-3.6925,40.45612,-3.69232,40.45614,-3.69115,40.45604,-3.69079,40.45246,-3.69109,40.45217,-3.69134,40.45259,-3.69845,40.4527,-3.69874,40.45343,-3.69866,40.45338,-3.69709,40.4548,-3.69709,40.45472,-3.69723,40.45278,-3.69733,40.45325,-3.69728,40.45337,-3.69698,40.45335,-3.69546,40.45375,-3.69528,40.45396,-3.69548,40.45613,-3.69528,40.45616,-3.69516,40.45636,-3.69515,40.45638,-3.69501,40.45617,-3.69484,40.45656,-3.69474,40.45649,-3.69484,40.45622,-3.69462,40.45588,-3.69459,40.45569,-3.69472,40.45379,-3.69488,40.45361,-3.69477,40.45322,-3.69493,40.45306,-3.69476,40.45302,-3.69449,40.45293,-3.69262,40.45411,-3.69246,40.46211,-3.69171,40.4622,-3.69395,40.45956,-3.69427,40.45933,-3.69442,40.46073,-3.69827,40.46223,-3.69759,40.46439,-3.6954,40.46532,-3.69259,40.46558,-3.69025,40.46566,-3.69032,40.46562,-3.68923,40.46573,-3.68897,40.46599,-3.68882,40.46644,-3.68908,40.46648,-3.69012,40.46821,-3.69363,40.46999,-3.69629,40.47027,-3.69638,40.47109,-3.69535,40.47193,-3.69475,40.47225,-3.69415,40.47309,-3.69363,40.47326,-3.69453,40.47325,-3.69518,40.47273,-3.69527,40.47159,-3.6959,40.4707,-3.69672,40.47059,-3.697,40.47203,-3.69905,40.47241,-3.69931,40.47257,-3.69968,40.47239,-3.69999,40.47237,-3.69977,40.47138,-3.69839,40.47044,-3.6971,40.47015,-3.69698,40.46806,-3.694,40.46695,-3.69129,40.46624,-3.68996,40.46592,-3.68993,40.46552,-3.69121,40.46526,-3.69311,40.46477,-3.69444,40.46559,-3.6959,40.46637,-3.69837,40.46673,-3.69861,40.46821,-3.70049,40.46861,-3.70062,40.46989,-3.70256,40.47049,-3.7023,40.47051,-3.70253,40.4702,-3.7032,40.47007,-3.70453,40.46972,-3.70532,40.46985,-3.7066,40.46963,-3.70733,40.4671,-3.70849,40.46629,-3.70842,40.46547,-3.7079,40.46472,-3.7065,40.46423,-3.70636,40.46402,-3.7054,40.46414,-3.70533,40.46487,-3.70591,40.46501,-3.70658,40.46491,-3.70666,40.46465,-3.70633,40.46424,-3.7062,40.46367,-3.70416,40.46051,-3.6985,40.46006,-3.69698,40.46012,-3.6966,40.46005,-3.69645,40.45999,-3.69659,40.45996,-3.69621,40.45973,-3.69584,40.45932,-3.69452,40.45916,-3.69253,40.45954,-3.69235,40.45926,-3.69137,40.4591,-3.69121,40.45901,-3.69046,40.45881,-3.69054,40.45855,-3.69004,40.45879,-3.68954,40.45899,-3.68942,40.45941,-3.6896,40.45943,-3.69035,40.45908,-3.69071,40.45936,-3.69418,40.46048,-3.69741,40.4606,-3.69804,40.4607,-3.69803,40.46056,-3.69849,40.45873,-3.70052,40.45747,-3.70163,40.4573,-3.70237,40.45708,-3.70268,40.45711,-3.70294,40.45658,-3.70487,40.4567,-3.70796,40.45714,-3.70958,40.45764,-3.71048,40.45772,-3.71126,40.46194,-3.70843,40.46319,-3.70742,40.46253,-3.70806,40.46246,-3.70832,40.46346,-3.70904,40.46424,-3.7092,40.46538,-3.71018,40.46651,-3.7105,40.46885,-3.71231,40.46932,-3.71245,40.46958,-3.71235,40.4694,-3.71244,40.46878,-3.71229,40.46633,-3.7105,40.46603,-3.71039,40.46581,-3.71064,40.46567,-3.71063,40.46563,-3.71047,40.46428,-3.70942,40.46346,-3.70918,40.46237,-3.70851,40.4618,-3.70862,40.45808,-3.71114,40.45794,-3.71111,40.45767,-3.71151,40.45784,-3.71292,40.45799,-3.713,40.45959,-3.71236,40.46171,-3.71218,40.46223,-3.71234,40.46287,-3.71307,40.46305,-3.71295,40.46294,-3.71305,40.463,-3.71333,40.4632,-3.71358,40.46332,-3.71413,40.46317,-3.71583,40.46275,-3.71804,40.46221,-3.71963,40.4613,-3.7191,40.46105,-3.71914,40.46074,-3.71963,40.46044,-3.71975,40.46016,-3.71976,40.45966,-3.71951,40.45953,-3.71923,40.4595,-3.7186,40.45772,-3.71314,40.45701,-3.71334,40.4561,-3.71416,40.45529,-3.71453,40.45549,-3.71446,40.4557,-3.71399,40.45624,-3.7139,40.45688,-3.71331,40.4577,-3.713,40.45775,-3.7129,40.45727,-3.71164,40.45664,-3.71214,40.45657,-3.71193,40.45632,-3.71236,40.45492,-3.71336,40.45463,-3.71379,40.45528,-3.71286,40.45733,-3.71153,40.45747,-3.71119,40.45768,-3.71118,40.45792,-3.71336,40.45982,-3.71936,40.46004,-3.71959,40.4603,-3.71955,40.46111,-3.71883,40.46148,-3.7189,40.4623,-3.71938,40.46289,-3.72001,40.46328,-3.7208,40.46379,-3.72117,40.46466,-3.72436,40.46495,-3.72697,40.4667,-3.72744,40.46844,-3.72737,40.46891,-3.72767,40.4696,-3.72839,40.47127,-3.729,40.47168,-3.7294,40.4725,-3.72919,40.47258,-3.72855,40.46874,-3.72536,40.46781,-3.7244,40.46694,-3.72419,40.46699,-3.72322,40.46669,-3.72275,40.46413,-3.72239,40.46471,-3.72486,40.46413,-3.72498,40.46102,-3.72488,40.46019,-3.72957,40.45726,-3.72983,40.45669,-3.73033,40.45645,-3.73004,40.45637,-3.7296,40.45608,-3.72942,40.45373,-3.72901,40.45329,-3.72915,40.4532,-3.72899,40.45341,-3.72871,40.45379,-3.72901,40.45604,-3.72939,40.4566,-3.72937,40.45689,-3.72988,40.45552,-3.73161,40.4551,-3.73227,40.4549,-3.73285,40.45479,-3.73352,40.45445,-3.7406,40.45431,-3.74169,40.45449,-3.74259,40.45834,-3.74484,40.46058,-3.74552,40.46299,-3.74756,40.46482,-3.74874,40.46756,-3.74947,40.46893,-3.74949,40.47002,-3.75001,40.47089,-3.75023];
+
+const D = Math.PI/180, RT = 6371000;
+const $ = s => document.querySelector(s);
+const hav = (a,b) => { const dla=(b[0]-a[0])*D, dlo=(b[1]-a[1])*D;
+  const x = Math.sin(dla/2)**2 + Math.cos(a[0]*D)*Math.cos(b[0]*D)*Math.sin(dlo/2)**2;
+  return 2*RT*Math.asin(Math.sqrt(x)); };
+
+let T = [], cum = [], KX = 0, KY = 111320, wp = [], tramos = [], hechos = {};
+const px = p => [p[1]*KX, p[0]*KY];
+const km = m => (m/1000).toFixed(1).replace('.', ',');
+
+function setTrack(pairs, nombre){
+  T = pairs; cum = [0];
+  for (let i=1;i<T.length;i++) cum[i] = cum[i-1] + hav(T[i-1], T[i]);
+  KX = 111320*Math.cos(T[0][0]*D);
+  if (nombre) $('#nom').textContent = nombre;
+  $('#kTotal').textContent = '/ ' + km(largo()) + ' km';
+  calcular();
+}
+const largo = () => cum[cum.length-1];
+
+/* ---- selección de waypoints: uno por giro real ---- */
+const rumbo = (a,b) => { const A=px(a), B=px(b); return Math.atan2(B[0]-A[0], B[1]-A[1])*180/Math.PI; };
+const dif = (a,b) => Math.abs(((b-a+180)%360+360)%360-180);
+
+function calcular(){
+  const umbral = +$('#ang').value, SEP = 60, MAXGAP = 2500;
+  let idx = [0];
+  for (let i=1;i<T.length-1;i++){
+    if (dif(rumbo(T[i-1],T[i]), rumbo(T[i],T[i+1])) > umbral){
+      if (hav(T[idx[idx.length-1]], T[i]) < SEP) continue;
+      idx.push(i);
+    }
+  }
+  idx.push(T.length-1);
+  /* en rectas largas Maps podría irse por otra calle: metemos un ancla */
+  const rell = [idx[0]];
+  for (const k of idx.slice(1)){
+    while (cum[k] - cum[rell[rell.length-1]] > MAXGAP){
+      let j = rell[rell.length-1];
+      while (j < k && cum[j] - cum[rell[rell.length-1]] < MAXGAP) j++;
+      rell.push(j);
+    }
+    rell.push(k);
+  }
+  wp = [...new Set(rell)].sort((a,b)=>a-b);
+
+  /* 11 puntos por enlace: origen + 9 intermedios + destino, solapando 1 */
+  tramos = [];
+  for (let i=0;i<wp.length-1;i+=10){
+    const seg = wp.slice(i, Math.min(i+11, wp.length));
+    if (seg.length > 1) tramos.push(seg);
+  }
+  $('#angV').textContent = umbral + '°';
+  $('#densMsg').textContent =
+    `${wp.length} puntos de paso · ${tramos.length} tramos de Maps · ${km(largo())} km en total.`;
+  pintarTramos(); pintarMapa();
+}
+
+const ll = i => `${T[i][0].toFixed(5)},${T[i][1].toFixed(5)}`;
+function urlTramo(seg){
+  const medias = seg.slice(1,-1).slice(0,9);
+  let u = `https://www.google.com/maps/dir/?api=1&travelmode=driving`
+        + `&origin=${ll(seg[0])}&destination=${ll(seg[seg.length-1])}`;
+  if (medias.length) u += `&waypoints=${medias.map(ll).join('|')}`;
+  return u;
+}
+const urlTodo = () => 'https://www.google.com/maps/dir/' + wp.map(ll).join('/');
+
+function pintarTramos(){
+  $('#lista').innerHTML = tramos.map((seg,i) => {
+    const a = cum[seg[0]], b = cum[seg[seg.length-1]];
+    const done = !!hechos[i];
+    const now = !done && !tramos.some((_,j) => j<i && !hechos[j]);
+    return `<div class="tr ${done?'done':''} ${now?'now':''}">
+      <div class="g"><i>${i+1}</i></div>
+      <div class="c">
+        <h3>Tramo ${i+1} · ${km(b-a)} km</h3>
+        <div class="m">del km ${km(a)} al ${km(b)} · ${seg.length} puntos</div>
+        <div class="b">
+          <button class="go" onclick="window.open('${urlTramo(seg)}','_blank')">Abrir en Maps</button>
+          <button class="sm ck" onclick="marcar(${i})">${done?'Hecho':'Marcar'}</button>
+        </div>
+      </div></div>`;
+  }).join('');
+  const n = Object.values(hechos).filter(Boolean).length;
+  if (n) $('#sub').textContent = `${n} de ${tramos.length} tramos hechos`;
+}
+function marcar(i){ hechos[i] = !hechos[i]; pintarTramos(); guardar(); }
+
+$('#bTodo').onclick = () => window.open(urlTodo(), '_blank');
+$('#bCopiaTodo').onclick = async () => {
+  try{ await navigator.clipboard.writeText(urlTodo());
+    $('#msgTodo').innerHTML = '<div class="ok">Enlace copiado.</div>'; }
+  catch(e){ $('#msgTodo').innerHTML = '<div class="ok">No se pudo copiar. El enlace tiene '
+    + urlTodo().length + ' caracteres; ábrelo con el botón de al lado.</div>'; }
+};
+
+/* ---- mapa y seguimiento ---- */
+let map, linea, marcas, yo, sigo = true, watch = null;
+function initMap(){
+  if (map) return;
+  map = L.map('mapa', {zoomControl:false});
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
+  linea = L.polyline(T, {color:'#0057A8', weight:6, opacity:.75}).addTo(map);
+  marcas = L.layerGroup().addTo(map);
+  map.on('dragstart', () => { sigo = false; $('#cSigo').setAttribute('aria-pressed','false'); });
+  pintarMapa(); encuadrar();
+}
+function pintarMapa(){
+  if (!map) return;
+  linea.setLatLngs(T);
+  marcas.clearLayers();
+  const punto = (i,txt,bg,fg) => L.marker(T[i], {icon: L.divIcon({className:'', iconSize:[24,24],
+    html:`<div style="width:24px;height:24px;border-radius:50%;background:${bg};color:${fg};
+      font:700 12px/24px 'Barlow Condensed',sans-serif;text-align:center;
+      box-shadow:0 0 0 2px #fff">${txt}</div>`})}).addTo(marcas);
+  punto(0,'A','#12734A','#fff');
+  tramos.forEach((seg,i) => { if (i) punto(seg[0], String(i+1), '#fff', '#0E1A24'); });
+  punto(T.length-1,'B','#B3301C','#fff');
+}
+function encuadrar(){ if (map) map.fitBounds(L.latLngBounds(T), {padding:[26,26]}); }
+$('#cFit').onclick = () => { sigo = false; $('#cSigo').setAttribute('aria-pressed','false'); encuadrar(); };
+$('#cSigo').onclick = e => { sigo = !sigo; e.target.setAttribute('aria-pressed', sigo);
+  if (sigo && yo) map.setView(yo.getLatLng(), Math.max(map.getZoom(), 16)); };
+
+/* proyección de mi posición sobre la traza */
+function proyectar(lat, lon){
+  const q = px([lat,lon]); let best = {s:0, d:Infinity};
+  for (let i=0;i<T.length-1;i++){
+    const a=px(T[i]), b=px(T[i+1]);
+    const dx=b[0]-a[0], dy=b[1]-a[1], L2=dx*dx+dy*dy;
+    let t = L2 ? ((q[0]-a[0])*dx+(q[1]-a[1])*dy)/L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(q[0]-(a[0]+t*dx), q[1]-(a[1]+t*dy));
+    if (d < best.d) best = {s: cum[i] + t*Math.hypot(dx,dy), d};
+  }
+  return best;
+}
+
+$('#cGps').onclick = e => {
+  if (watch !== null){
+    navigator.geolocation.clearWatch(watch); watch = null;
+    e.target.setAttribute('aria-pressed','false'); e.target.textContent = 'Activar GPS';
+    $('#aviso').classList.remove('on'); return;
+  }
+  if (!navigator.geolocation){ alert('Este navegador no da posición.'); return; }
+  e.target.setAttribute('aria-pressed','true'); e.target.textContent = 'GPS activo';
+  watch = navigator.geolocation.watchPosition(pos => {
+    const {latitude:la, longitude:lo, speed} = pos.coords;
+    if (!yo) yo = L.circleMarker([la,lo], {radius:9, color:'#fff', weight:3,
+      fillColor:'#B3301C', fillOpacity:1}).addTo(map);
+    else yo.setLatLng([la,lo]);
+    if (sigo) map.setView([la,lo], Math.max(map.getZoom(), 16));
+
+    const p = proyectar(la, lo);
+    $('#kHecho').textContent = km(p.s);
+    $('#hRest').textContent = km(largo() - p.s);
+    $('#hDesv').textContent = Math.round(p.d);
+    $('#hVel').textContent = speed != null ? Math.round(speed*3.6) : '–';
+    $('#barra').style.width = (p.s/largo()*100) + '%';
+    $('#sub').textContent = 'En ruta';
+    const fuera = p.d > 60;
+    $('#aviso').classList.toggle('on', fuera);
+    if (fuera) $('#aviso').textContent = `Fuera del recorrido · ${Math.round(p.d)} m de la línea`;
+  }, err => {
+    $('#aviso').classList.add('on');
+    $('#aviso').textContent = 'Sin señal de GPS: ' + err.message;
+  }, {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
+};
+
+/* ---- navegación entre vistas ---- */
+function irA(v){
+  document.querySelectorAll('.view').forEach(s => s.classList.remove('on'));
+  $('#v-'+v).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b =>
+    b.setAttribute('aria-current', String(b.dataset.v === v)));
+  if (v === 'seguir'){ initMap(); setTimeout(() => map.invalidateSize(), 60); }
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => irA(b.dataset.v));
+
+/* ---- exportar ---- */
+function bajar(n, txt, tipo){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], {type:tipo}));
+  a.download = n; a.click(); URL.revokeObjectURL(a.href);
+}
+$('#bGpx').onclick = () => bajar('recorrido.gpx',
+  `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Seguir recorrido" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${$('#nom').textContent}</name><trkseg>\n`
+  + T.map(p => `<trkpt lat="${p[0]}" lon="${p[1]}"></trkpt>`).join('\n')
+  + `\n</trkseg></trk>\n</gpx>`, 'application/gpx+xml');
+$('#bKml').onclick = () => bajar('recorrido.kml',
+  `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>${$('#nom').textContent}</name><LineString><tessellate>1</tessellate><coordinates>`
+  + T.map(p => `${p[1]},${p[0]},0`).join(' ')
+  + `</coordinates></LineString></Placemark></Document></kml>`,
+  'application/vnd.google-earth.kml+xml');
+
+$('#ang').oninput = () => { calcular(); guardar(); };
+
+$('#fGpx').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const doc = new DOMParser().parseFromString(await f.text(), 'text/xml');
+  const pts = [...doc.getElementsByTagName('trkpt')].map(p =>
+    [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))]);
+  if (pts.length < 2){ alert('Ese GPX no trae traza (<trkpt>).'); return; }
+  hechos = {}; yo = null;
+  setTrack(simplificar(pts, 8), f.name.replace(/\.gpx$/i,''));
+  if (map){ encuadrar(); }
+  guardar();
+};
+$('#bReset').onclick = () => { hechos = {}; setTrack(pares(TRACK_FLAT), 'Viernes · Pista');
+  if (map) encuadrar(); guardar(); };
+
+/* Douglas-Peucker para no arrastrar miles de puntos */
+function simplificar(P, eps){
+  if (P.length < 3) return P;
+  const kx = 111320*Math.cos(P[0][0]*D);
+  const q = p => [p[1]*kx, p[0]*111320];
+  const rec = (ini, fin) => {
+    const a = q(P[ini]), b = q(P[fin]);
+    const dx=b[0]-a[0], dy=b[1]-a[1], L2=dx*dx+dy*dy;
+    let dmax = 0, idx = -1;
+    for (let i=ini+1;i<fin;i++){
+      const p = q(P[i]);
+      let t = L2 ? ((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      const d = Math.hypot(p[0]-(a[0]+t*dx), p[1]-(a[1]+t*dy));
+      if (d > dmax){ dmax = d; idx = i; }
+    }
+    if (dmax > eps && idx > 0) return [...rec(ini, idx).slice(0,-1), ...rec(idx, fin)];
+    return [P[ini], P[fin]];
+  };
+  return rec(0, P.length-1);
+}
+
+/* ---- guardado ---- */
+async function guardar(){
+  try{ if (window.storage) await window.storage.set('seguir-recorrido',
+    JSON.stringify({T, hechos, ang:$('#ang').value, nom:$('#nom').textContent})); }catch(e){}
+}
+async function cargar(){
+  try{
+    if (window.storage){
+      const r = await window.storage.get('seguir-recorrido');
+      if (r && r.value){
+        const d = JSON.parse(r.value);
+        hechos = d.hechos || {}; if (d.ang) $('#ang').value = d.ang;
+        if (d.T && d.T.length > 1){ setTrack(d.T, d.nom); return true; }
+      }
+    }
+  }catch(e){}
+  return false;
+}
+
+const pares = f => { const o=[]; for (let i=0;i<f.length;i+=2) o.push([f[i], f[i+1]]); return o; };
+(async () => {
+  if (!await cargar()) setTrack(pares(TRACK_FLAT), 'Viernes · Pista');
+  initMap();
+})();
+</script>
