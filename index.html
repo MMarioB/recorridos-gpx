@@ -118,8 +118,12 @@ const persist=()=>save({done:[...state.done],z:state.z});
 
 const single=a=>"https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(a)+"&travelmode=driving";
 function zoneURL(z){
-  const pts=ZONES[z].map(s=>encodeURIComponent(s.addr));
-  return "https://www.google.com/maps/dir/"+pts.join("/")+"/data=!4m2!4m1!3e0"; // 3e0 = coche
+  const s=ZONES[z].map(x=>encodeURIComponent(x.addr));
+  const origin=s[0], destination=s[s.length-1];
+  const way=s.slice(1,-1).join("|");
+  let u="https://www.google.com/maps/dir/?api=1&origin="+origin+"&destination="+destination+"&travelmode=driving";
+  if(way) u+="&waypoints="+way;
+  return u;
 }
 function tag(v){return v==="Yes"?["t-new","Nueva"]:v==="No"?["t-no","No"]:["t-carr","Continúa"];}
 function firstUnfinishedZone(){for(let i=0;i<ZONES.length;i++){if(ZONES[i].some(s=>!state.done.has(s.n)))return i;}return ZONES.length-1;}
