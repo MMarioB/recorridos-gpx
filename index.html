@@ -1,646 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Seguir recorrido</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ruta FI-MAD-R01A · Marquesinas</title>
 <style>
-:root{
-  --paper:#EEF1F4; --panel:#FFF; --ink:#0E1A24; --ink-2:#4B5C6B;
-  --linea:#0057A8; --linea-d:#003B75; --ambar:#FFB000; --ambar-d:#7A5200;
-  --verde:#12734A; --rojo:#B3301C; --rail:#CFD8E0; --r:3px;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%}
-body{background:var(--paper);color:var(--ink);font:400 15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
-button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
-.mono{font-family:"IBM Plex Mono",monospace}
-:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
-#app{max-width:560px;margin:0 auto;background:var(--panel);min-height:100%;
-  display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--rail)}
+  :root{
+    --bg:#EEF0F3; --surface:#FFFFFF; --ink:#12151B; --muted:#6A7280;
+    --line:#E2E5EA; --primary:#0B5FFF; --primary-d:#0A4FD6;
+    --done:#0E9F6E; --amber:#E8890C; --slate:#8A93A0;
+    --shadow:0 1px 2px rgba(16,20,30,.06),0 6px 18px rgba(16,20,30,.08);
+    --r:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);
+    padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 12px);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:0 14px}
+  header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 8px}
+  .brandline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{display:flex;align-items:baseline;gap:8px}
+  .brand b{font-size:18px;letter-spacing:-.02em}
+  .brand small{color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .reset{border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    font-size:12px;font-weight:600;padding:8px 10px;border-radius:10px;cursor:pointer}
+  .progress{margin-top:10px}
+  .bar{height:10px;background:#DCE0E7;border-radius:999px;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--primary),#3B82F6);
+    border-radius:999px;transition:width .35s ease}
+  .ptxt{display:flex;justify-content:space-between;margin-top:6px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .ptxt b{color:var(--ink)}
 
-header{background:var(--linea);color:#fff;padding:13px 16px 0;flex:0 0 auto;z-index:600}
-.eyebrow{font:600 11px/1 "IBM Plex Sans";letter-spacing:.16em;text-transform:uppercase;
-  opacity:.72;display:flex;justify-content:space-between}
-.km{display:flex;align-items:baseline;gap:7px;margin:3px 0 9px}
-.km b{font:700 44px/.9 "Barlow Condensed";font-variant-numeric:tabular-nums}
-.km s{text-decoration:none;font:600 22px/1 "Barlow Condensed";opacity:.62}
-.km em{font-style:normal;margin-left:auto;text-align:right;font:500 12px/1.35 "IBM Plex Sans";opacity:.85}
-.bar{height:4px;background:rgba(255,255,255,.24);position:relative}
-.bar i{position:absolute;inset:0 auto 0 0;background:var(--ambar);width:0;transition:width .5s}
-nav{display:flex;background:var(--linea-d)}
-nav button{flex:1;padding:9px 4px 10px;font:600 11px/1 "IBM Plex Sans";letter-spacing:.1em;
-  text-transform:uppercase;color:rgba(255,255,255,.66);border-bottom:3px solid transparent}
-nav button[aria-current="true"]{color:#fff;border-bottom-color:var(--ambar)}
-.view{display:none;flex:1 1 auto;min-height:0}
-.view.on{display:flex;flex-direction:column}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    box-shadow:var(--shadow);padding:18px 18px 16px;margin-top:6px}
+  .topline{display:flex;align-items:center;gap:12px}
+  .num{font-variant-numeric:tabular-nums;font-weight:800;font-size:52px;line-height:.9;letter-spacing:-.03em}
+  .num small{font-size:16px;color:var(--muted);font-weight:700;vertical-align:top}
+  .badge{margin-left:auto;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    padding:6px 10px;border-radius:999px}
+  .b-new{background:#FDF1DF;color:var(--amber)}
+  .b-carr{background:#EDF0F4;color:var(--slate)}
+  .b-no{background:#fff;color:var(--slate);border:1px dashed var(--line)}
+  .calle{font-size:22px;font-weight:750;letter-spacing:-.01em;margin:12px 0 2px;line-height:1.15}
+  .ref{color:var(--muted);font-size:14px;font-weight:600}
+  .meta{margin-top:12px;display:grid;gap:6px;font-size:13px}
+  .meta div{display:flex;gap:8px}
+  .meta span{color:var(--muted);min-width:82px;font-weight:600}
+  .meta b{font-weight:650}
+  .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
 
-#aviso{display:none;background:var(--rojo);color:#fff;padding:11px 16px;font:600 14px/1.35 "IBM Plex Sans"}
-#aviso.on{display:block}
-#mapa{flex:1 1 auto;min-height:290px;background:#DCE3E9}
-.hud{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rail)}
-.hud div{padding:9px 6px 11px;text-align:center;border-right:1px solid #EAEEF2}
-.hud div:last-child{border-right:0}
-.hud span{display:block;font:600 10px/1 "IBM Plex Sans";letter-spacing:.12em;
-  text-transform:uppercase;color:var(--ink-2);margin-bottom:4px}
-.hud b{font:700 26px/1 "Barlow Condensed";font-variant-numeric:tabular-nums}
-.hud u{text-decoration:none;font:500 11px/1 "IBM Plex Sans";color:var(--ink-2)}
-.mt{flex:0 0 auto;display:flex;gap:7px;padding:9px 12px;border-top:1px solid var(--rail);flex-wrap:wrap}
-.chip{padding:8px 13px;border-radius:100px;background:var(--paper);
-  font:500 13px/1 "IBM Plex Sans";box-shadow:0 0 0 1px var(--rail) inset}
-.chip[aria-pressed="true"]{background:var(--ambar);box-shadow:none;font-weight:600}
+  .maps{margin-top:16px;display:flex;align-items:center;justify-content:center;gap:10px;
+    width:100%;border:0;cursor:pointer;text-decoration:none;
+    background:var(--primary);color:#fff;font-size:17px;font-weight:750;
+    padding:16px;border-radius:14px;box-shadow:0 4px 14px rgba(11,95,255,.28)}
+  .maps:active{background:var(--primary-d);transform:translateY(1px)}
+  .maps svg{width:20px;height:20px}
+  .row{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin-top:10px}
+  .btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);
+    font-size:15px;font-weight:700;padding:14px 8px;border-radius:12px;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  .btn.done{background:var(--done);border-color:var(--done);color:#fff}
+  .btn.done:disabled{opacity:.4}
+  .btn.ghost{color:var(--muted)}
 
-.scroll{overflow-y:auto;flex:1 1 auto}
-.intro{padding:15px 16px;background:#F7F9FB;border-bottom:1px solid var(--rail);
-  font-size:13.5px;line-height:1.55;color:var(--ink-2)}
-.intro b{color:var(--ink)}
-.tr{display:grid;grid-template-columns:46px 1fr;border-bottom:1px solid #EAEEF2}
-.tr .g{position:relative}
-.tr .g::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:4px;
-  transform:translateX(-50%);background:var(--rail)}
-.tr:first-of-type .g::before{top:24px}
-.tr:last-of-type .g::before{bottom:auto;height:24px}
-.tr.done .g::before{background:var(--linea)}
-.tr .g i{position:absolute;left:50%;top:24px;transform:translate(-50%,-50%);width:26px;height:26px;
-  border-radius:50%;background:var(--panel);box-shadow:0 0 0 2px var(--rail) inset;
-  font:700 13px/26px "Barlow Condensed";text-align:center;color:var(--ink-2);font-style:normal}
-.tr.done .g i{background:var(--linea);color:#fff;box-shadow:none}
-.tr.now .g i{background:var(--ambar);color:var(--ambar-d);box-shadow:0 0 0 4px #FFF4DB}
-.tr .c{padding:12px 16px 15px 4px}
-.tr h3{margin:0;font:600 16px/1.25 "IBM Plex Sans"}
-.tr .m{font:400 12px/1.4 "IBM Plex Mono";color:var(--ink-2);margin-top:2px}
-.tr .b{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap}
-.tr.now{background:#FFFDF6}
-.go{background:var(--linea);color:#fff;padding:13px 18px;border-radius:var(--r);
-  font:600 15px/1 "IBM Plex Sans";flex:1 1 auto}
-.go:active{background:var(--linea-d)}
-.sm{padding:13px 14px;border-radius:var(--r);font:600 14px/1 "IBM Plex Sans";
-  background:#fff;box-shadow:0 0 0 1.5px var(--rail) inset}
-.tr.done .sm.ck{background:var(--linea);color:#fff;box-shadow:none}
-
-.sec{padding:18px 16px;border-bottom:1px solid #EAEEF2}
-.sec h2{font:600 12px/1 "IBM Plex Sans";letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-2);margin:0 0 5px}
-.sec p{margin:0 0 12px;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
-.sec p b{color:var(--ink)}
-ol.pasos{margin:0 0 12px;padding-left:19px;font-size:13.5px;line-height:1.65;color:var(--ink-2)}
-.btns{display:flex;gap:8px;flex-wrap:wrap}
-.btn{padding:11px 15px;border-radius:var(--r);background:var(--ink);color:#fff;
-  font:600 14px/1 "IBM Plex Sans"}
-.btn.alt{background:#fff;color:var(--ink);box-shadow:0 0 0 1.5px var(--rail) inset}
-label.num{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2);margin-bottom:11px}
-label.num input[type=range]{flex:1 1 auto;max-width:170px}
-label.chk{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.5;
-  color:var(--ink);margin-bottom:12px}
-label.chk input{margin-top:3px;width:18px;height:18px;accent-color:var(--linea)}
-.ok{background:#F0F6FB;color:var(--linea-d);padding:11px 13px;border-radius:var(--r);
-  font-size:13px;line-height:1.5;margin-top:10px;box-shadow:0 0 0 1px #C8DCEE inset}
-.riesgo{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #EAEEF2;
-  font-size:13px}
-.riesgo:last-child{border-bottom:0}
-.riesgo b{font:600 13px/1 "IBM Plex Mono";min-width:62px}
-.riesgo span{flex:1 1 auto;color:var(--ink-2)}
-.riesgo button{padding:7px 11px;border-radius:var(--r);background:#fff;font:600 12px/1 "IBM Plex Sans";
-  box-shadow:0 0 0 1.5px var(--rail) inset;white-space:nowrap}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .listhead{display:flex;align-items:center;justify-content:space-between;
+    margin:20px 4px 8px;font-size:13px;color:var(--muted);font-weight:700;cursor:pointer;user-select:none}
+  .listhead .chev{transition:transform .2s}
+  .listhead.open .chev{transform:rotate(180deg)}
+  ul{list-style:none;margin:0;padding:0;display:none;border:1px solid var(--line);
+    border-radius:var(--r);overflow:hidden;background:var(--surface)}
+  ul.open{display:block}
+  li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer}
+  li:first-child{border-top:0}
+  li .ln{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;width:30px;color:var(--muted)}
+  li .lc{flex:1;min-width:0}
+  li .lc .t{font-size:14.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  li .lc .s{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  li .dot{width:20px;height:20px;border-radius:999px;border:2px solid var(--line);flex:none}
+  li.done{background:#F3FBF7}
+  li.done .dot{background:var(--done);border-color:var(--done);position:relative}
+  li.done .dot:after{content:"";position:absolute;left:5px;top:2px;width:5px;height:9px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  li.cur{background:#EEF4FF}
+  li.cur .ln{color:var(--primary)}
+  .hint{color:var(--muted);font-size:12px;text-align:center;margin:14px 6px 0;line-height:1.5}
 </style>
-
-<div id="app">
+</head>
+<body>
+<div class="wrap">
   <header>
-    <div class="eyebrow"><span id="nom">Viernes · Pista</span><span id="cab" class="mono"></span></div>
-    <div class="km"><b id="kHecho">0,0</b><s id="kTotal">/ 0 km</s>
-      <em id="sub">Toca Seguir para empezar</em></div>
-    <div class="bar"><i id="barra"></i></div>
-    <nav>
-      <button data-v="seguir" aria-current="true">Seguir</button>
-      <button data-v="tramos">Tramos Maps</button>
-      <button data-v="ajustes">Ajustes</button>
-    </nav>
+    <div class="brandline">
+      <div class="brand"><b>Ruta R01A</b><small>Marquesinas · Madrid</small></div>
+      <button class="reset" id="reset">Reiniciar</button>
+    </div>
+    <div class="progress">
+      <div class="bar"><i id="fill"></i></div>
+      <div class="ptxt"><span><b id="pdone">0</b> hechas</span><span><b id="ptot">0</b> paradas</span></div>
+    </div>
   </header>
 
-  <section id="v-seguir" class="view on">
-    <div id="aviso"></div>
-    <div id="mapa"></div>
-    <div class="hud">
-      <div><span>Restante</span><b id="hRest">–</b><u> km</u></div>
-      <div><span>Desvío</span><b id="hDesv">–</b><u> m</u></div>
-      <div><span>Velocidad</span><b id="hVel">–</b><u> km/h</u></div>
-    </div>
-    <div class="mt">
-      <button class="chip" id="cGps" aria-pressed="false">Activar GPS</button>
-      <button class="chip" id="cSigo" aria-pressed="true">Centrar en mí</button>
-      <button class="chip" id="cAncla" aria-pressed="false">Poner ancla</button>
-      <button class="chip" id="cFit">Ver todo</button>
-    </div>
-  </section>
+  <section class="card" id="card"></section>
 
-  <section id="v-tramos" class="view">
-    <div class="scroll">
-      <div class="intro">Maps enruta entre puntos, no sigue trazas. Estas anclas la obligan a
-        reproducir tu recorrido, pero el enlace tiene un techo de puntos que aún no conocemos.
-        <b>Empieza por el diagnóstico.</b></div>
+  <div class="listhead" id="listhead">
+    <span>Ver todas las paradas</span>
+    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+  </div>
+  <ul id="list"></ul>
 
-      <div class="sec">
-        <h2>Diagnóstico: qué rompe el enlace</h2>
-        <p>Cambié dos cosas a la vez, así que hay que aislarlas. Abre las tres y dime cuáles
-          cargan. <b>La A es la configuración que ya te funcionó</b>, así que debería ir sí o sí.</p>
-        <div class="btns">
-          <button class="btn alt" id="dA">A · 70 puntos, sin dirflg</button>
-          <button class="btn alt" id="dB">B · 70 puntos, con dirflg</button>
-          <button class="btn alt" id="dC">C · todos, sin dirflg</button>
-        </div>
-        <div id="msgDiag"></div>
-      </div>
-
-      <div class="sec">
-        <h2>Enlaces largos</h2>
-        <p id="pLargos"></p>
-        <div id="largos" class="btns"></div>
-      </div>
-
-      <div class="sec" style="padding-bottom:6px">
-        <h2>Tramos cortos, garantizados</h2>
-        <p>Formato <span class="mono">api=1</span>, 9 paradas por enlace. Es el que te carga
-          siempre y el único donde <span class="mono">avoid=highways</span> está documentado.</p>
-      </div>
-      <div id="lista"></div>
-    </div>
-  </section>
-
-  <section id="v-ajustes" class="view">
-    <div class="scroll">
-      <div class="sec">
-        <h2>Evitar que se vaya por la autovía</h2>
-        <label class="chk"><input type="checkbox" id="noAuto" checked>
-          <span>Prohibir autovías. Tu recorrido va a 21 km/h de media por ciudad y no toca
-            ninguna. Sin esto, Maps coge la M-30 o la A-6 en cuanto le dejas un hueco.</span></label>
-        <label class="chk"><input type="checkbox" id="noPeaje">
-          <span>Prohibir peajes.</span></label>
-      </div>
-
-      <div class="sec">
-        <h2>Puntos por enlace</h2>
-        <p>El techo que aguanta Maps en el formato largo. Con 71 te cargó; con 104 no.
-          Baja esto hasta que carguen los enlaces largos, pero <b>no lo bajes de 70</b>: por
-          debajo, el hueco máximo vuelve a pasar de 1,9 km y Maps se te va otra vez por la A-6.</p>
-        <label class="num">Máximo
-          <input id="porEnlace" type="range" min="20" max="110" step="5" value="60">
-          <span class="mono" id="vPorEnlace">60</span></label>
-        <div class="ok" id="largosMsg"></div>
-      </div>
-
-      <div class="sec">
-        <h2>Densidad de anclas</h2>
-        <p>Las anclas se colocan donde tu traza se separa de la línea recta, y además se rellena
-          cualquier hueco largo aunque sea recto: una recta de 1 km pegada a la M-30 también se
-          la lleva Maps.</p>
-        <label class="num">Desvío máximo
-          <input id="desvio" type="range" min="20" max="100" step="5" value="40">
-          <span class="mono" id="vDesvio">40 m</span></label>
-        <label class="num">Hueco máximo
-          <input id="hueco" type="range" min="300" max="1500" step="50" value="600">
-          <span class="mono" id="vHueco">600 m</span></label>
-        <div class="ok" id="densMsg"></div>
-      </div>
-
-      <div class="sec">
-        <h2>Huecos que aún quedan</h2>
-        <p>Los tramos más largos sin ancla son los que Maps puede reinterpretar. Si ves que se
-          desvía en alguno, clávale un ancla en medio.</p>
-        <div id="riesgos"></div>
-        <div class="btns" style="margin-top:12px">
-          <button class="btn alt" id="bLimpia">Quitar mis anclas manuales</button>
-        </div>
-      </div>
-
-      <div class="sec">
-        <h2>Seguir la traza entera, sin trocear</h2>
-        <p><b>OsmAnd</b> y <b>Organic Maps</b> navegan un GPX completo con voz y sin waypoints.
-          Maps no lo hace nunca, porque es un enrutador.</p>
-        <ol class="pasos">
-          <li>Descarga el GPX.</li>
-          <li>Ábrelo con OsmAnd.</li>
-          <li>Menú → Dirigirse a → <b>Seguir traza</b>.</li>
-        </ol>
-        <div class="btns">
-          <button class="btn" id="bGpx">Descargar GPX</button>
-          <button class="btn alt" id="bKml">Descargar KML</button>
-        </div>
-      </div>
-
-      <div class="sec">
-        <h2>Otro recorrido</h2>
-        <div class="btns">
-          <label class="btn alt" for="fGpx">Cargar GPX</label>
-          <input id="fGpx" type="file" accept=".gpx,application/gpx+xml" hidden>
-          <button class="btn alt" id="bReset">Volver al del viernes</button>
-        </div>
-      </div>
-    </div>
-  </section>
+  <p class="hint">Cada parada abre la navegación de Google Maps a ese punto (un destino, sin límite de 10). Marca <b>Hecho</b> para avanzar. El progreso se guarda en este móvil.</p>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-/* Traza del viernes 24/07, simplificada a 8 m. Formato plano [lat,lon,...] */
-const TRACK_FLAT = [40.45629,-3.69505,40.45624,-3.6925,40.45612,-3.69232,40.45614,-3.69115,40.45604,-3.69079,40.45246,-3.69109,40.45217,-3.69134,40.45259,-3.69845,40.4527,-3.69874,40.45343,-3.69866,40.45338,-3.69709,40.4548,-3.69709,40.45472,-3.69723,40.45278,-3.69733,40.45325,-3.69728,40.45337,-3.69698,40.45335,-3.69546,40.45375,-3.69528,40.45396,-3.69548,40.45613,-3.69528,40.45616,-3.69516,40.45636,-3.69515,40.45638,-3.69501,40.45617,-3.69484,40.45656,-3.69474,40.45649,-3.69484,40.45622,-3.69462,40.45588,-3.69459,40.45569,-3.69472,40.45379,-3.69488,40.45361,-3.69477,40.45322,-3.69493,40.45306,-3.69476,40.45302,-3.69449,40.45293,-3.69262,40.45411,-3.69246,40.46211,-3.69171,40.4622,-3.69395,40.45956,-3.69427,40.45933,-3.69442,40.46073,-3.69827,40.46223,-3.69759,40.46439,-3.6954,40.46532,-3.69259,40.46558,-3.69025,40.46566,-3.69032,40.46562,-3.68923,40.46573,-3.68897,40.46599,-3.68882,40.46644,-3.68908,40.46648,-3.69012,40.46821,-3.69363,40.46999,-3.69629,40.47027,-3.69638,40.47109,-3.69535,40.47193,-3.69475,40.47225,-3.69415,40.47309,-3.69363,40.47326,-3.69453,40.47325,-3.69518,40.47273,-3.69527,40.47159,-3.6959,40.4707,-3.69672,40.47059,-3.697,40.47203,-3.69905,40.47241,-3.69931,40.47257,-3.69968,40.47239,-3.69999,40.47237,-3.69977,40.47138,-3.69839,40.47044,-3.6971,40.47015,-3.69698,40.46806,-3.694,40.46695,-3.69129,40.46624,-3.68996,40.46592,-3.68993,40.46552,-3.69121,40.46526,-3.69311,40.46477,-3.69444,40.46559,-3.6959,40.46637,-3.69837,40.46673,-3.69861,40.46821,-3.70049,40.46861,-3.70062,40.46989,-3.70256,40.47049,-3.7023,40.47051,-3.70253,40.4702,-3.7032,40.47007,-3.70453,40.46972,-3.70532,40.46985,-3.7066,40.46963,-3.70733,40.4671,-3.70849,40.46629,-3.70842,40.46547,-3.7079,40.46472,-3.7065,40.46423,-3.70636,40.46402,-3.7054,40.46414,-3.70533,40.46487,-3.70591,40.46501,-3.70658,40.46491,-3.70666,40.46465,-3.70633,40.46424,-3.7062,40.46367,-3.70416,40.46051,-3.6985,40.46006,-3.69698,40.46012,-3.6966,40.46005,-3.69645,40.45999,-3.69659,40.45996,-3.69621,40.45973,-3.69584,40.45932,-3.69452,40.45916,-3.69253,40.45954,-3.69235,40.45926,-3.69137,40.4591,-3.69121,40.45901,-3.69046,40.45881,-3.69054,40.45855,-3.69004,40.45879,-3.68954,40.45899,-3.68942,40.45941,-3.6896,40.45943,-3.69035,40.45908,-3.69071,40.45936,-3.69418,40.46048,-3.69741,40.4606,-3.69804,40.4607,-3.69803,40.46056,-3.69849,40.45873,-3.70052,40.45747,-3.70163,40.4573,-3.70237,40.45708,-3.70268,40.45711,-3.70294,40.45658,-3.70487,40.4567,-3.70796,40.45714,-3.70958,40.45764,-3.71048,40.45772,-3.71126,40.46194,-3.70843,40.46319,-3.70742,40.46253,-3.70806,40.46246,-3.70832,40.46346,-3.70904,40.46424,-3.7092,40.46538,-3.71018,40.46651,-3.7105,40.46885,-3.71231,40.46932,-3.71245,40.46958,-3.71235,40.4694,-3.71244,40.46878,-3.71229,40.46633,-3.7105,40.46603,-3.71039,40.46581,-3.71064,40.46567,-3.71063,40.46563,-3.71047,40.46428,-3.70942,40.46346,-3.70918,40.46237,-3.70851,40.4618,-3.70862,40.45808,-3.71114,40.45794,-3.71111,40.45767,-3.71151,40.45784,-3.71292,40.45799,-3.713,40.45959,-3.71236,40.46171,-3.71218,40.46223,-3.71234,40.46287,-3.71307,40.46305,-3.71295,40.46294,-3.71305,40.463,-3.71333,40.4632,-3.71358,40.46332,-3.71413,40.46317,-3.71583,40.46275,-3.71804,40.46221,-3.71963,40.4613,-3.7191,40.46105,-3.71914,40.46074,-3.71963,40.46044,-3.71975,40.46016,-3.71976,40.45966,-3.71951,40.45953,-3.71923,40.4595,-3.7186,40.45772,-3.71314,40.45701,-3.71334,40.4561,-3.71416,40.45529,-3.71453,40.45549,-3.71446,40.4557,-3.71399,40.45624,-3.7139,40.45688,-3.71331,40.4577,-3.713,40.45775,-3.7129,40.45727,-3.71164,40.45664,-3.71214,40.45657,-3.71193,40.45632,-3.71236,40.45492,-3.71336,40.45463,-3.71379,40.45528,-3.71286,40.45733,-3.71153,40.45747,-3.71119,40.45768,-3.71118,40.45792,-3.71336,40.45982,-3.71936,40.46004,-3.71959,40.4603,-3.71955,40.46111,-3.71883,40.46148,-3.7189,40.4623,-3.71938,40.46289,-3.72001,40.46328,-3.7208,40.46379,-3.72117,40.46466,-3.72436,40.46495,-3.72697,40.4667,-3.72744,40.46844,-3.72737,40.46891,-3.72767,40.4696,-3.72839,40.47127,-3.729,40.47168,-3.7294,40.4725,-3.72919,40.47258,-3.72855,40.46874,-3.72536,40.46781,-3.7244,40.46694,-3.72419,40.46699,-3.72322,40.46669,-3.72275,40.46413,-3.72239,40.46471,-3.72486,40.46413,-3.72498,40.46102,-3.72488,40.46019,-3.72957,40.45726,-3.72983,40.45669,-3.73033,40.45645,-3.73004,40.45637,-3.7296,40.45608,-3.72942,40.45373,-3.72901,40.45329,-3.72915,40.4532,-3.72899,40.45341,-3.72871,40.45379,-3.72901,40.45604,-3.72939,40.4566,-3.72937,40.45689,-3.72988,40.45552,-3.73161,40.4551,-3.73227,40.4549,-3.73285,40.45479,-3.73352,40.45445,-3.7406,40.45431,-3.74169,40.45449,-3.74259,40.45834,-3.74484,40.46058,-3.74552,40.46299,-3.74756,40.46482,-3.74874,40.46756,-3.74947,40.46893,-3.74949,40.47002,-3.75001,40.47089,-3.75023];
+const STOPS = [{"n": 1, "addr": "Calle Sinesio Delgado 1, Madrid", "calle": "CL SINESIO DELGADO 1", "ref": "P CASTELLANA", "marco": "ES-MAD-AB-03967.F2.02", "crea": "AUDI GAMA E-HYBRID MADRID S.28", "new": "Carried Over"}, {"n": 2, "addr": "Paseo de la Castellana 241, Madrid", "calle": "PS CASTELLANA 241", "ref": "PZA CASTILLA", "marco": "ES-MAD-AB-04134.F2.02", "crea": "DOVE S.28", "new": "Carried Over"}, {"n": 3, "addr": "Paseo de la Castellana 233, Madrid", "calle": "Pº DE LA CASTELLANA 233", "ref": "", "marco": "ES-MAD-AB-04681.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 4, "addr": "Paseo de la Castellana 221, Madrid", "calle": "PS CASTELLANA 221", "ref": "PZA DE CASTILLA", "marco": "ES-MAD-AB-03222.F2.02", "crea": "UPI ODISEA CABALLO S.29", "new": "Carried Over"}, {"n": 5, "addr": "Paseo de la Castellana 221, Madrid", "calle": "PS CASTELLANA 221", "ref": "PZA DE CASTILLA", "marco": "ES-MAD-AB-03223.F2.02", "crea": "DISNEY VAIANA HOMBRE S.27 S.28", "new": "Carried Over"}, {"n": 6, "addr": "Calle Martires de la Ventilla, Madrid", "calle": "C/ MARTIRES DE LA VENTILLA", "ref": "C/ SAN AQUILINO", "marco": "ES-MAD-AB-04544.F2.01", "crea": "(L) DULCESOL BRILLAR S-30", "new": "Yes"}, {"n": 7, "addr": "Calle San Aquilino 6, Madrid", "calle": "CL SAN AQUILINO 6", "ref": "CL VIA LIMITE", "marco": "ES-MAD-AB-04355.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Yes"}, {"n": 8, "addr": "Paseo de la Castellana 189, Madrid", "calle": "PS CASTELLANA 189", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-03004.F2.04", "crea": "GEELY AUTO PENINSULA S.29", "new": "Yes"}, {"n": 9, "addr": "Paseo de la Castellana 187, Madrid", "calle": "PS CASTELLANA 187", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02394.F2.02", "crea": "FOSTER GRILL BARBECUE S.27", "new": "Carried Over"}, {"n": 10, "addr": "Paseo de la Castellana 187, Madrid", "calle": "PS CASTELLANA 187", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02395.F2.02", "crea": "DISNEY VAIANA CERDITO S.27 S.28", "new": "Carried Over"}, {"n": 12, "addr": "Paseo de la Castellana 167, Madrid", "calle": "PS CASTELLANA 167", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02396.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 13, "addr": "Paseo de la Castellana 167, Madrid", "calle": "PS CASTELLANA 167", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02397.F2.02", "crea": "DOVE S.28", "new": "Carried Over"}, {"n": 14, "addr": "Paseo de la Castellana 121, Madrid", "calle": "PS CASTELLANA 121", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02398.F2.04", "crea": "MISS DIOR NATALIE S.39", "new": "Carried Over"}, {"n": 15, "addr": "Paseo de la Castellana 121, Madrid", "calle": "PS CASTELLANA 121", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02399.F2.04", "crea": "DISNEY VAIANA CERDITO S.27 S.28", "new": "Carried Over"}, {"n": 16, "addr": "Paseo de la Castellana 121, Madrid", "calle": "PS CASTELLANA 121", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02400.F2.04", "crea": "(L) DULCESOL GANAR S-30", "new": "Yes"}, {"n": 17, "addr": "Paseo de la Castellana 113, Madrid", "calle": "PS CASTELLANA 113", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02401.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 18, "addr": "Paseo de la Castellana 113, Madrid", "calle": "PS CASTELLANA 113", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02402.F2.02", "crea": "MAGNUM FRIGO SOLERO S.28", "new": "Carried Over"}, {"n": 19, "addr": "Calle San German 10, Madrid", "calle": "CL SAN GERMAN 10", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-02930.F2.02", "crea": "FOSTER GRILL BARBECUE S.27", "new": "Carried Over"}, {"n": 20, "addr": "Calle San German 26, Madrid", "calle": "CL SAN GERMAN 26", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-02932.F2.02", "crea": "MISS DIOR NATALIE S.39", "new": "Carried Over"}, {"n": 21, "addr": "Calle San German 40, Madrid", "calle": "CL SAN GERMAN 40", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-00995.F2.02", "crea": "LOREAL CERAVE S.28", "new": "Carried Over"}, {"n": 22, "addr": "Calle San German 31, Madrid", "calle": "CL SAN GERMAN 31", "ref": "P DE LA CASTELLANA", "marco": "ES-MAD-AB-00607.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 23, "addr": "Calle General Cabrera, Madrid", "calle": "CL GENERAL CABRERA", "ref": "CL SAN GERMAN", "marco": "ES-MAD-AB-02933.F2.02", "crea": "FUENTE DE CIBELES AYTO. MADRID", "new": "No"}, {"n": 24, "addr": "Calle San German 15, Madrid", "calle": "CL SAN GERMAN 15", "ref": "P DE LA CASTELLANA", "marco": "ES-MAD-AB-02931.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 25, "addr": "Calle San German, Madrid", "calle": "SAN GERMAN", "ref": "P CASTELLANA", "marco": "ES-MAD-AB-02929.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Carried Over"}, {"n": 26, "addr": "Paseo de la Castellana 105, Madrid", "calle": "PS CASTELLANA 105", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02403.F2.02", "crea": "DOVE S.28", "new": "Carried Over"}, {"n": 27, "addr": "Paseo de la Castellana 105, Madrid", "calle": "PS CASTELLANA 105", "ref": "PZA CIBELES", "marco": "ES-MAD-AB-02404.F2.02", "crea": "LOREAL CERAVE S.28", "new": "Carried Over"}, {"n": 28, "addr": "Avenida del General Peron, Madrid", "calle": "AV GENERAL PERON", "ref": "INFANTA MERCEDES", "marco": "ES-MAD-AB-02597.F2.02", "crea": "MAGNUM FRIGO SOLERO S.28", "new": "Carried Over"}, {"n": 29, "addr": "Avenida del General Peron, Madrid", "calle": "AV GENERAL PERON", "ref": "INFANTA MERCEDES", "marco": "ES-MAD-AB-02598.F2.02", "crea": "MAGNUM FRIGO SOLERO S.28", "new": "Carried Over"}, {"n": 30, "addr": "Avenida Presidente Carmona 12, Madrid", "calle": "AV PRESIDENTE CARMONA 12", "ref": "SAN GERMAN", "marco": "ES-MAD-AB-00862.F2.02", "crea": "ARTE Y MISERICORDIA AYTO. MADRID", "new": "No"}, {"n": 31, "addr": "Calle Julian Besteiro 9, Madrid", "calle": "C/ JULIAN BESTEIRO FTE Nº9", "ref": "CL SAN GERMAN", "marco": "ES-MAD-AB-03661.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 32, "addr": "Calle Julian Besteiro 19, Madrid", "calle": "C/ JULIAN BESTEIRO FTE Nº19", "ref": "CL SAN GERMAN", "marco": "ES-MAD-AB-03662.F2.02", "crea": "GUERLAIN ABEILLE ROYALE CREMA OJOS S.06", "new": "Carried Over"}, {"n": 33, "addr": "Calle Orense 53, Madrid", "calle": "CL ORENSE 53", "ref": "AV GRAL PERON", "marco": "ES-MAD-AB-02317.F2.02", "crea": "VERANOS DE LA VILLA 2026 AYTO. MADRID", "new": "No"}, {"n": 34, "addr": "Calle Orense 35, Madrid", "calle": "CL ORENSE 35", "ref": "AV GRAL PERON", "marco": "ES-MAD-AB-00925.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 35, "addr": "Calle Poeta Joan Maragall 6, Madrid", "calle": "CL POETA MARAGALL 6", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-04389.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Yes"}, {"n": 36, "addr": "Calle Poeta Joan Maragall 22, Madrid", "calle": "CL POETA JOAN MARAGALL 22", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-03846.F2.02", "crea": "FOSTER GRILL BARBECUE S.27", "new": "Carried Over"}, {"n": 37, "addr": "Calle Poeta Joan Maragall, Madrid", "calle": "CL POETA JOAN MARAGALL", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-03894.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 38, "addr": "Calle Rosario Pino 14, Madrid", "calle": "CL ROSARIO PINO 14", "ref": "CL ORENSE", "marco": "ES-MAD-AB-00642.F2.02", "crea": "UPI ODISEA CABALLO S.29", "new": "Carried Over"}, {"n": 39, "addr": "Calle Orense 81, Madrid", "calle": "CL ORENSE 81", "ref": "AV GRAL. PERON", "marco": "ES-MAD-AB-02318.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 40, "addr": "Calle Sor Angela de la Cruz 32, Madrid", "calle": "CL SOR ANGELA DE LA CRUZ 32", "ref": "CL MARQUES DE VIANA", "marco": "ES-MAD-AB-04077.F2.02", "crea": "ARTE Y MISERICORDIA AYTO. MADRID", "new": "No"}, {"n": 41, "addr": "Calle Bravo Murillo 313, Madrid", "calle": "CL BRAVO MURILLO 313", "ref": "CUATRO CAMINOS", "marco": "ES-MAD-AB-04131.F2.02", "crea": "VERISURE BOX CASCO CASTELL S.29", "new": "Yes"}, {"n": 42, "addr": "Calle Bravo Murillo 318, Madrid", "calle": "CL BRAVO MURILLO 318", "ref": "PZA. CASTILLA", "marco": "ES-MAD-AB-00181.F2.02", "crea": "VERANOS DE LA VILLA 2026 AYTO. MADRID", "new": "No"}, {"n": 43, "addr": "Calle Bravo Murillo 360, Madrid", "calle": "CL BRAVO MURILLO 360", "ref": "PZA CASTILLA", "marco": "ES-MAD-AB-00186.F2.02", "crea": "LOREAL YSL MYSLF S.29", "new": "Carried Over"}, {"n": 44, "addr": "Calle Bravo Murillo 340, Madrid", "calle": "CL BRAVO MURILLO", "ref": "PZA CASTILLA", "marco": "ES-MAD-AB-02366.F2.04", "crea": "MISS DIOR NATALIE S.39", "new": "Carried Over"}, {"n": 45, "addr": "Calle Bravo Murillo 340, Madrid", "calle": "CL BRAVO MURILLO", "ref": "PZA CASTILLA", "marco": "ES-MAD-AB-03118.F2.04", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 46, "addr": "Avenida de Asturias, Madrid", "calle": "AV ASTURIAS", "ref": "CL SINESIO DELGADO", "marco": "ES-MAD-AB-03467.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 47, "addr": "Avenida de Asturias, Madrid", "calle": "AV ASTURIAS", "ref": "CL SINESIO DELGADO", "marco": "ES-MAD-AB-03471.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 48, "addr": "Calle Joaquin Dicenta, Madrid", "calle": "CL JOAQUIN DICENTA", "ref": "CL SINESIO DELGADO", "marco": "ES-MAD-AB-04292.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 49, "addr": "Calle Matilde Landa 54, Madrid", "calle": "CL MATILDE LANDA 54 SENTIDO", "ref": "CL NABOR", "marco": "ES-MAD-AB-04459.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Yes"}, {"n": 50, "addr": "Calle Sorolla, Madrid", "calle": "CL SOROLLA", "ref": "", "marco": "ES-MAD-AB-04450.F2.02", "crea": "VERISURE BOX CASCO CASTELL S.29", "new": "Yes"}, {"n": 51, "addr": "Avenida de Asturias, Madrid", "calle": "AV ASTURIAS", "ref": "CL SINESIO DELGADO", "marco": "ES-MAD-AB-03358.F2.02", "crea": "LOEWE MAR FRASCO NARANJA S.16", "new": "Yes"}, {"n": 52, "addr": "Avenida de Asturias, Madrid", "calle": "AV ASTURIAS", "ref": "PZA. CASTILLA", "marco": "ES-MAD-AB-03478.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 53, "addr": "Avenida de Asturias 65, Madrid", "calle": "AV ASTURIAS 65", "ref": "CL SINESIO DELGADO", "marco": "ES-MAD-AB-04291.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Yes"}, {"n": 54, "addr": "Avenida de Asturias, Madrid", "calle": "AV DE ASTURIAS", "ref": "PZA. CASTILLA", "marco": "ES-MAD-AB-04360.F2.02", "crea": "VERISURE LLAVES CASTELL S.29", "new": "Yes"}, {"n": 55, "addr": "Avenida de Asturias, Madrid", "calle": "AV ASTURIAS", "ref": "PZA. CASTILLA", "marco": "ES-MAD-AB-03472.F2.02", "crea": "HEINZ MAYONESA S.28", "new": "Carried Over"}, {"n": 56, "addr": "Avenida de Asturias, Madrid", "calle": "AV ASTURIAS", "ref": "PZA. CASTILLA", "marco": "ES-MAD-AB-03468.F2.02", "crea": "VERISURE BOX CASCO CASTELL S.29", "new": "Yes"}, {"n": 57, "addr": "Calle Bravo Murillo 377, Madrid", "calle": "CL BRAVO MURILLO 377", "ref": "CUATRO CAMINOS", "marco": "ES-MAD-AB-00187.F2.04", "crea": "SONY HACIENDO AMIGOS YA EN CINES POST S.29", "new": "Carried Over"}, {"n": 58, "addr": "Calle Bravo Murillo 359, Madrid", "calle": "CL BRAVO MURILLO 359", "ref": "CUATRO CAMINOS", "marco": "ES-MAD-AB-00185.F2.02", "crea": "FUENTE DE CIBELES AYTO. MADRID", "new": "No"}, {"n": 59, "addr": "Calle Pinos Alta 2, Madrid", "calle": "CL PINOS ALTA 2", "ref": "CL VEZA", "marco": "ES-MAD-AB-03171.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Yes"}, {"n": 60, "addr": "Calle del Platano 18, Madrid", "calle": "CL DEL PLATANO 18", "ref": "CL ARROYO", "marco": "ES-MAD-AB-02774.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 61, "addr": "Calle Arroyo, Madrid", "calle": "CL ARROYO", "ref": "P DE LA DIRECCION", "marco": "ES-MAD-AB-02775.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 62, "addr": "Calle Arroyo 26, Madrid", "calle": "CL ARROYO 26", "ref": "P DIRECCION", "marco": "ES-MAD-AB-03172.F2.02", "crea": "DISNEY VAIANA CERDITO S.27 S.28", "new": "Carried Over"}, {"n": 63, "addr": "Calle Cantueso 103, Madrid", "calle": "CL CANTUESO 103 SENTIDO", "ref": "CL CAPITAN BLANCO ARGUIB", "marco": "ES-MAD-AB-04403.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 64, "addr": "Paseo de la Direccion, Madrid", "calle": "PS DE LA DIRECCION", "ref": "CL MARQUES DE VIANA", "marco": "ES-MAD-AB-00900.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Yes"}, {"n": 65, "addr": "Calle Capitan Blanco Argibay, Madrid", "calle": "CL CAPITAN BLANCO ARGIBAY", "ref": "", "marco": "ES-MAD-AB-04302.F2.02", "crea": "UPI ODISEA GUERREROS S.29", "new": "Carried Over"}, {"n": 66, "addr": "Paseo de la Direccion, Madrid", "calle": "PS DE LA DIRECCION", "ref": "", "marco": "ES-MAD-AB-04301.F2.02", "crea": "MISS DIOR NATALIE S.39", "new": "Carried Over"}, {"n": 67, "addr": "Paseo de la Direccion 170, Madrid", "calle": "Pº DE LA DIRECCION Nº170 ANT C/ GARDENIAS", "ref": "", "marco": "ES-MAD-AB-04627.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 68, "addr": "Calle Marques de Viana, Madrid", "calle": "CL MARQUES DE VIANA", "ref": "PASEO DE LA DIRECCION", "marco": "ES-MAD-AB-04293.F2.02", "crea": "MCD MITIQUISIMO MENU CASTELL S.28", "new": "Carried Over"}, {"n": 69, "addr": "Calle Marques de Viana, Madrid", "calle": "CL MARQUES DE VIANA", "ref": "", "marco": "ES-MAD-AB-04294.F2.02", "crea": "DISNEY VAIANA CERDITO S.27 S.28", "new": "Carried Over"}, {"n": 70, "addr": "Calle Marques de Viana, Madrid", "calle": "CL MARQUES DE VIANA", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-04078.F2.02", "crea": "AUDI GAMA E-HYBRID MADRID S.28", "new": "Carried Over"}, {"n": 71, "addr": "Calle Marques de Viana 75, Madrid", "calle": "CL MARQUES DE VIANA 75", "ref": "CL BRAVO MURILLO", "marco": "ES-MAD-AB-04075.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Carried Over"}, {"n": 72, "addr": "Calle Marques de Viana 43, Madrid", "calle": "CL MARQUES DE VIANA 43", "ref": "CL SOR ANGELA CRUZ", "marco": "ES-MAD-AB-03886.F2.02", "crea": "FOSTER GRILL BARBECUE S.27", "new": "Carried Over"}, {"n": 73, "addr": "Calle Marques de Viana, Madrid", "calle": "CL MARQUES DE VIANA", "ref": "P DE LA DIRECCION", "marco": "ES-MAD-AB-04073.F2.02", "crea": "FOSTER GRILL BARBECUE S.27", "new": "Carried Over"}, {"n": 74, "addr": "Calle Marques de Viana 3, Madrid", "calle": "CL MARQUES DE VIANA 3", "ref": "CL SOR ANGELA CRUZ", "marco": "ES-MAD-AB-04072.F2.02", "crea": "SONY HACIENDO AMIGOS YA EN CINES POST S.29", "new": "Carried Over"}, {"n": 75, "addr": "Calle Sor Angela de la Cruz 37, Madrid", "calle": "CL SOR ANGELA DE LA CRUZ 37", "ref": "P CASTELLANA", "marco": "ES-MAD-AB-04076.F2.02", "crea": "LOEWE VELA VERDE S.27", "new": "Yes"}, {"n": 76, "addr": "Calle Sor Angela de la Cruz 11, Madrid", "calle": "CL SOR ANGELA DE LA CRUZ 11", "ref": "P CASTELLANA", "marco": "ES-MAD-AB-04197.F2.02", "crea": "GUERLAIN ABEILLE ROYALE CREMA OJOS S.06", "new": "Yes"}, {"n": 77, "addr": "Calle Sor Angela de la Cruz 6, Madrid", "calle": "CL SOR ANGELA DE LA CRUZ 6", "ref": "CL MARQUES DE VIANA", "marco": "ES-MAD-AB-02356.F2.02", "crea": "ARTE Y MISERICORDIA AYTO. MADRID", "new": "No"}, {"n": 78, "addr": "Calle Bravo Murillo 245, Madrid", "calle": "CL BRAVO MURILLO 245", "ref": "GTA CUATRO CAMINOS", "marco": "ES-MAD-AB-00649.F2.02", "crea": "UPI ODISEA CABALLO S.29", "new": "Carried Over"}, {"n": 79, "addr": "Calle Bravo Murillo 236, Madrid", "calle": "CL BRAVO MURILLO 236", "ref": "PZA. CASTILLA", "marco": "ES-MAD-AB-00459.F2.02", "crea": "DOVE S.28", "new": "Carried Over"}, {"n": 80, "addr": "Calle Lope de Haro 8, Madrid", "calle": "CL LOPE DE HARO 8", "ref": "FRANCO RODRIGUEZ", "marco": "ES-MAD-AB-01561.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Carried Over"}, {"n": 81, "addr": "Calle Francos Rodriguez 42, Madrid", "calle": "CL FRANCOS RODRIGUEZ 42", "ref": "ANTONIO MACHADO", "marco": "ES-MAD-AB-00829.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 82, "addr": "Calle Francos Rodriguez 72, Madrid", "calle": "CL FRANCOS RODRIGUEZ 72", "ref": "ANTONIO MACHADO", "marco": "ES-MAD-AB-00828.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 83, "addr": "Calle Francos Rodriguez, Madrid", "calle": "CL FRANCOS RODRIGUEZ", "ref": "BRAVO MURILLO", "marco": "ES-MAD-AB-00081.F2.02", "crea": "PLAZA MAYOR AYTO. MADRID", "new": "No"}, {"n": 84, "addr": "Calle Ofelia Nieto 4, Madrid", "calle": "CL OFELIA NIETO 4 B", "ref": "DEL PILAR", "marco": "ES-MAD-AB-01086.F2.02", "crea": "(L) DULCESOL EXPRESARSE S-30", "new": "Yes"}, {"n": 85, "addr": "Calle Ofelia Nieto, Madrid", "calle": "CL OFELIA NIETO", "ref": "P DE LA DIRECCION", "marco": "ES-MAD-AB-01088.F2.02", "crea": "VERANOS DE LA VILLA 2026 AYTO. MADRID", "new": "No"}, {"n": 86, "addr": "Calle Ofelia Nieto, Madrid", "calle": "C/ OFELIA NIETO", "ref": "CALLE FRANCOS RODRIGUEZ", "marco": "ES-MAD-AB-01968.F2.02", "crea": "(L) DULCESOL ADIVINAR S-30", "new": "Yes"}, {"n": 87, "addr": "Calle Villaamil, Madrid", "calle": "CL VILLAAMIL", "ref": "C DEL CHORRILLO", "marco": "ES-MAD-AB-01089.F2.02", "crea": "DOVE S.28", "new": "Carried Over"}, {"n": 88, "addr": "Camino del Chorrillo, Madrid", "calle": "CM CHORRILLO", "ref": "CL VILLAMIL", "marco": "ES-MAD-AB-01597.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Yes"}, {"n": 89, "addr": "Calle Villaamil, Madrid", "calle": "CL VILLAAMIL", "ref": "OFELIA NIETO", "marco": "ES-MAD-AB-01158.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 90, "addr": "Calle Ofelia Nieto 69, Madrid", "calle": "CL OFELIA NIETO 69", "ref": "FRANCOS RGUEZ.", "marco": "ES-MAD-AB-01090.F2.02", "crea": "VERANOS DE LA VILLA 2026 AYTO. MADRID", "new": "No"}, {"n": 91, "addr": "Calle Ofelia Nieto 3, Madrid", "calle": "CL OFELIA NIETO 3", "ref": "FRANCO RODRIGUEZ", "marco": "ES-MAD-AB-01094.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 92, "addr": "Calle Francos Rodriguez 98, Madrid", "calle": "CL FRANCOS RODRIGUEZ 98", "ref": "ANTONIO MACHADO", "marco": "ES-MAD-AB-00976.F2.02", "crea": "GUERLAIN ABEILLE ROYALE SERUM JUVENTUD S.06", "new": "Carried Over"}, {"n": 93, "addr": "Avenida Santo Angel de la Guarda, Madrid", "calle": "AV SANTO ANGEL DE LA GUARDA", "ref": "ALCALDE MARTIN", "marco": "ES-MAD-AB-01551.F2.02", "crea": "LOREAL CERAVE S.28", "new": "Carried Over"}, {"n": 94, "addr": "Avenida Santo Angel de la Guarda 13, Madrid", "calle": "AV SANTO ANGEL DE LA GUARDA 13", "ref": "BRAVO MURILLO", "marco": "ES-MAD-AB-04246.F2.02", "crea": "UPI ODISEA GUERREROS S.29", "new": "Carried Over"}, {"n": 95, "addr": "Avenida Santo Angel de la Guarda, Madrid", "calle": "AV SANTO ANGEL DE LA GUARDA", "ref": "ALCALDE MARTIN", "marco": "ES-MAD-AB-01007.F2.02", "crea": "LOREAL VALENTINO S.28", "new": "Carried Over"}, {"n": 96, "addr": "Avenida Santo Angel de la Guarda, Madrid", "calle": "AV SANTO ANGEL DE LA GUARDA", "ref": "FRANCOS RDGUEZ", "marco": "ES-MAD-AB-02694.F2.02", "crea": "DOVE S.28", "new": "Carried Over"}, {"n": 97, "addr": "Calle Alcalde Martin de Alzaga, Madrid", "calle": "CL ALCALDE MARTIN ALZAGA", "ref": "FRANCOS RGUEZ.", "marco": "ES-MAD-AB-01555.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 98, "addr": "Calle Alcalde Martin de Alzaga 25, Madrid", "calle": "CL ALCALDE MARTIN ALZAGA 25", "ref": "CL ANTONIO MACHADO", "marco": "ES-MAD-AB-04247.F2.02", "crea": "LOREAL CERAVE S.28", "new": "Carried Over"}, {"n": 99, "addr": "Calle Alcalde Martin de Alzaga, Madrid", "calle": "CL ALCALDE MARTIN ALZAGA", "ref": "CL ANTONIO MACHADO", "marco": "ES-MAD-AB-03868.F2.02", "crea": "MISS DIOR FRASCO S.39", "new": "Carried Over"}, {"n": 100, "addr": "Calle Antonio Machado, Madrid", "calle": "CL ANTONIO MACHADO", "ref": "FRANCOS RGUEZ.", "marco": "ES-MAD-AB-00063.F2.02", "crea": "(L) DULCESOL ADIVINAR S-30", "new": "Yes"}, {"n": 101, "addr": "Calle Francos Rodriguez, Madrid", "calle": "CL FRANCOS RODRIGUEZ", "ref": "BRAVO MURILLO", "marco": "ES-MAD-AB-00978.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 102, "addr": "Calle Francos Rodriguez 77, Madrid", "calle": "CL FRANCOS RODRIGUEZ 77", "ref": "BRAVO MURILLO", "marco": "ES-MAD-AB-01552.F2.02", "crea": "UPI ODISEA GUERREROS S.29", "new": "Carried Over"}, {"n": 103, "addr": "Calle Doctor Federico Rubio y Gali 77, Madrid", "calle": "CL DR. FEDERICO RUBIO GALI 77", "ref": "PABLO IGLESIAS", "marco": "ES-MAD-AB-00902.F2.02", "crea": "VERISURE BOX CASCO CASTELL S.29", "new": "Carried Over"}, {"n": 104, "addr": "Calle Doctor Federico Rubio y Gali 67, Madrid", "calle": "CL DR. FEDERICO RUBIO GALI 67", "ref": "PABLO IGLESIAS", "marco": "ES-MAD-AB-01327.F2.02", "crea": "FUENTE DE CIBELES AYTO. MADRID", "new": "No"}, {"n": 105, "addr": "Calle Doctor Federico Rubio y Gali 102, Madrid", "calle": "CL DR. FEDERICO RUBIO GALI 102", "ref": "FCOS. RODRIGUEZ", "marco": "ES-MAD-AB-02263.F2.02", "crea": "UPI ODISEA GUERREROS S.29", "new": "Carried Over"}, {"n": 106, "addr": "Calle Doctor Federico Rubio y Gali 112, Madrid", "calle": "CL DR. FEDERICO RUBIO GALI 112", "ref": "F. RODRIGUEZ", "marco": "ES-MAD-AB-00899.F2.02", "crea": "UPI ODISEA GUERREROS S.29", "new": "Carried Over"}, {"n": 107, "addr": "Calle Francos Rodriguez 69, Madrid", "calle": "CL FRANCOS RODRIGUEZ 69 2ª MARQUESINA", "ref": "BRAVO MURILLO", "marco": "ES-MAD-AB-02862.F2.02", "crea": "LOREAL VALENTINO S.28", "new": "Carried Over"}, {"n": 108, "addr": "Calle Francos Rodriguez 69, Madrid", "calle": "C/ FRANCOS RODRIGUEZ 69 1ª MARQUESINA", "ref": "BRAVO MURILLO", "marco": "ES-MAD-AB-00830.F2.02", "crea": "GUERLAIN ABEILLE ROYALE SERUM JUVENTUD S.06", "new": "Carried Over"}, {"n": 109, "addr": "Avenida de Pablo Iglesias 87, Madrid", "calle": "AV PABLO IGLESIAS 87", "ref": "CIUDAD UNIVERSITARIA", "marco": "ES-MAD-AB-02889.F2.02", "crea": "GUERLAIN ABEILLE ROYALE CREMA OJOS S.06", "new": "Carried Over"}, {"n": 110, "addr": "Avenida de Pablo Iglesias 92, Madrid", "calle": "AV PABLO IGLESIAS 92", "ref": "CL OFELIA NIETO", "marco": "ES-MAD-AB-02578.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 111, "addr": "Calle Francos Rodriguez 110, Madrid", "calle": "CL FRANCOS RODRIGUEZ 110", "ref": "ANTONIO MACHADO", "marco": "ES-MAD-AB-01416.F2.02", "crea": "SONY HACIENDO AMIGOS YA EN CINES POST S.29", "new": "Carried Over"}, {"n": 112, "addr": "Calle Francos Rodriguez, Madrid", "calle": "CL FRANCOS RODRIGUEZ", "ref": "ANTONIO MACHADO", "marco": "ES-MAD-AB-00979.F2.02", "crea": "GUERLAIN ABEILLE ROYALE SERUM JUVENTUD S.06", "new": "Carried Over"}, {"n": 113, "addr": "Calle Antonio Machado, Madrid", "calle": "CL ANTONIO MACHADO", "ref": "JOAQUIN LORENZO", "marco": "ES-MAD-AB-02347.F2.02", "crea": "VERANOS DE LA VILLA 2026 AYTO. MADRID", "new": "No"}, {"n": 114, "addr": "Calle Antonio Machado 15, Madrid", "calle": "CL ANTONIO MACHADO 15", "ref": "CL FRANCOS RODRIGUEZ", "marco": "ES-MAD-AB-02348.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 115, "addr": "Calle Federico Carlos Sainz de Robles 3, Madrid", "calle": "FEDERICO CARLOS SAINZ DE ROBLES Nº3", "ref": "C/ ISLA DE OZA", "marco": "ES-MAD-AB-04692.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Yes"}, {"n": 116, "addr": "Calle Isla de Oza, Madrid", "calle": "CL ISLA DE OZA", "ref": "S.MARTIN PORRES", "marco": "ES-MAD-AB-02375.F2.02", "crea": "VERANOS DE LA VILLA 2026 AYTO. MADRID", "new": "No"}, {"n": 117, "addr": "Calle Isla de Oza, Madrid", "calle": "CL ISLA DE OZA", "ref": "S.MARTIN PORRES", "marco": "ES-MAD-AB-01964.F2.02", "crea": "COMERCIOS CENTENARIOS 2026 AYTO. MADRID", "new": "No"}, {"n": 118, "addr": "Calle San Martin de Porres, Madrid", "calle": "CL SAN MARTIN DE PORRES", "ref": "CL ISLA DE OZA", "marco": "ES-MAD-AB-02351.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Yes"}, {"n": 119, "addr": "Calle San Martin de Porres 10, Madrid", "calle": "CL SAN MARTIN DE PORRES 10", "ref": "DR.RAMON CASTRO", "marco": "ES-MAD-AB-02352.F2.02", "crea": "DISNEY VAIANA HOMBRE S.27 S.28", "new": "Carried Over"}, {"n": 120, "addr": "Calle Doctor Juan Jose Lopez Ibor 29, Madrid", "calle": "CL DR. J.J. LOPEZ IBOR 29", "ref": "CL ISLA DE OZA", "marco": "ES-MAD-AB-00312.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Yes"}, {"n": 121, "addr": "Calle Doctor Juan Jose Lopez Ibor 24, Madrid", "calle": "CL DR. J.J. LOPEZ IBOR 24", "ref": "DR.RAMON CASTRO", "marco": "ES-MAD-AB-02345.F2.02", "crea": "VERISURE GARAJE CASTELL S.29", "new": "Yes"}, {"n": 122, "addr": "Calle Doctor Juan Jose Lopez Ibor 13, Madrid", "calle": "CL DR. J.J. LOPEZ IBOR 13", "ref": "CL ISLA DE OZA", "marco": "ES-MAD-AB-01258.F2.02", "crea": "REMODELACION CALLE ALCALA MADRID", "new": "Yes"}, {"n": 123, "addr": "Calle Doctor Juan Jose Lopez Ibor, Madrid", "calle": "CL DR. J.J. LOPEZ IBOR", "ref": "DR. RAMON CASTRO", "marco": "ES-MAD-AB-00923.F2.02", "crea": "ARTE Y MISERICORDIA AYTO. MADRID", "new": "No"}, {"n": 124, "addr": "Avenida Martires Maristas, Madrid", "calle": "AV MARTIRES MARISTAS", "ref": "ALFONSO FDEZ. CLAUSE", "marco": "ES-MAD-AB-02275.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 125, "addr": "Calle Navalperal, Madrid", "calle": "CL NAVALPERAL", "ref": "ALFONSO FDEZ.", "marco": "ES-MAD-AB-01812.F2.02", "crea": "FOSTER GRILL BARBECUE S.27", "new": "Carried Over"}, {"n": 126, "addr": "Avenida de Miraflores, Madrid", "calle": "AV MIRAFLORES", "ref": "AV COMPLUTENSE", "marco": "ES-MAD-AB-01766.F2.02", "crea": "HUDA BEAUTY LABIOS S.30", "new": "Yes"}, {"n": 127, "addr": "Avenida Complutense, Madrid", "calle": "AV COMPLUTENSE", "ref": "AV PUERTA DE HIERRO", "marco": "ES-MAD-AB-02266.F2.02", "crea": "VERISURE BOX CASCO CASTELL S.29", "new": "Carried Over"}, {"n": 128, "addr": "Avenida Complutense, Madrid", "calle": "AV COMPLUTENSE", "ref": "AV MIRAFLORES", "marco": "ES-MAD-AB-02313.F2.02", "crea": "GEELY AUTO PENINSULA S.29", "new": "Carried Over"}, {"n": 129, "addr": "Avenida de Miraflores, Madrid", "calle": "AV MIRAFLORES", "ref": "SINESIO DELGADO", "marco": "ES-MAD-AB-01772.F2.02", "crea": "REPSOL CASTELLANO S.30", "new": "Yes"}, {"n": 130, "addr": "Calle Fuentelarreina, Madrid", "calle": "CL FUENTELARREINA", "ref": "M30", "marco": "ES-MAD-AB-02353.F2.02", "crea": "LOEWE MODELO S.16", "new": "Yes"}];
+const KEY = "r01a_v1";
 
-const D = Math.PI/180, RT = 6371000, $ = s => document.querySelector(s);
-const hav = (a,b) => { const dla=(b[0]-a[0])*D, dlo=(b[1]-a[1])*D;
-  const x = Math.sin(dla/2)**2 + Math.cos(a[0]*D)*Math.cos(b[0]*D)*Math.sin(dlo/2)**2;
-  return 2*RT*Math.asin(Math.sqrt(x)); };
-const km = m => (m/1000).toFixed(1).replace('.', ',');
+// ---- persistencia con fallback a memoria ----
+let mem = {done:[], cur:0};
+function load(){ try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s);}catch(e){} return mem; }
+function save(st){ mem=st; try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
+let state = load();
+state.done = new Set(state.done||[]);
+if(typeof state.cur!=="number") state.cur=0;
 
-let T = [], cum = [], KX = 0, wp = [], tramos = [], hechos = {}, manuales = [];
-const px = p => [p[1]*KX, p[0]*111320];
-const largo = () => cum[cum.length-1];
+const $=s=>document.querySelector(s);
+const mapsURL=a=>"https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(a)+"&travelmode=driving";
 
-function setTrack(pairs, nombre){
-  T = pairs; cum = [0];
-  for (let i=1;i<T.length;i++) cum[i] = cum[i-1] + hav(T[i-1], T[i]);
-  KX = 111320*Math.cos(T[0][0]*D);
-  if (nombre) $('#nom').textContent = nombre;
-  $('#kTotal').textContent = '/ ' + km(largo()) + ' km';
-  calcular();
+function firstPending(from=0){
+  for(let i=from;i<STOPS.length;i++) if(!state.done.has(STOPS[i].n)) return i;
+  return -1;
+}
+function badge(v){
+  if(v==="Yes") return ['b-new','Nueva'];
+  if(v==="No")  return ['b-no','No'];
+  return ['b-carr','Continúa'];
+}
+function persist(){ save({done:[...state.done], cur:state.cur}); }
+
+function renderCard(){
+  const s=STOPS[state.cur]; const [bc,bt]=badge(s.new);
+  const isDone=state.done.has(s.n);
+  $("#card").innerHTML=`
+    <div class="topline">
+      <div class="num"><small>#</small>${String(s.n).padStart(3,"0")}</div>
+      <div class="badge ${bc}">${bt}</div>
+    </div>
+    <div class="calle">${s.calle}</div>
+    ${s.ref?`<div class="ref">↳ ${s.ref}</div>`:``}
+    <div class="meta">
+      <div><span>Marco</span><b class="mono">${s.marco}</b></div>
+      <div><span>Creatividad</span><b>${s.crea}</b></div>
+    </div>
+    <a class="maps" href="${mapsURL(s.addr)}" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      Abrir en Maps
+    </a>
+    <div class="row">
+      <button class="btn done" id="mark" ${isDone?"disabled":""}>${isDone?"Hecha ✓":"Hecho ✓"}</button>
+      <button class="btn ghost" id="skip">Saltar</button>
+      <button class="btn ghost" id="prev">Anterior</button>
+    </div>`;
+  $("#mark").onclick=()=>{ state.done.add(s.n); const nx=firstPending(state.cur+1);
+    state.cur = nx>=0 ? nx : Math.min(state.cur+1,STOPS.length-1); persist(); renderAll(); };
+  $("#skip").onclick=()=>{ state.cur=Math.min(state.cur+1,STOPS.length-1); persist(); renderAll(); };
+  $("#prev").onclick=()=>{ state.cur=Math.max(state.cur-1,0); persist(); renderAll(); };
 }
 
-/* punto interpolado a s metros del inicio: siempre cae sobre la línea */
-function enS(s){
-  if (s <= 0) return T[0];
-  if (s >= largo()) return T[T.length-1];
-  let lo = 0, hi = cum.length-1;
-  while (lo < hi-1){ const m = (lo+hi)>>1; if (cum[m] <= s) lo = m; else hi = m; }
-  const seg = cum[hi]-cum[lo], t = seg ? (s-cum[lo])/seg : 0;
-  return [T[lo][0] + t*(T[hi][0]-T[lo][0]), T[lo][1] + t*(T[hi][1]-T[lo][1])];
+function renderProgress(){
+  const d=state.done.size, t=STOPS.length;
+  $("#fill").style.width=(t? d/t*100:0)+"%";
+  $("#pdone").textContent=d; $("#ptot").textContent=t;
 }
 
-/* ---------------------------------------------------------------
-   Selección de anclas.
-   Antes: un ancla por giro, con tope de 2,5 km. Ese tope dejaba
-   huecos de casi 2 km y Maps se iba por la A-6 (49 km en vez de 32).
-   Ahora: Douglas-Peucker sobre el desvío + relleno interpolado de
-   cualquier hueco largo, aunque el tramo sea recto.
-   --------------------------------------------------------------- */
-function rdp(ini, fin, eps, out){
-  const A = px(T[ini]), B = px(T[fin]);
-  const dx = B[0]-A[0], dy = B[1]-A[1], L2 = dx*dx+dy*dy;
-  let dmax = 0, k = -1;
-  for (let i=ini+1;i<fin;i++){
-    const p = px(T[i]);
-    let t = L2 ? ((p[0]-A[0])*dx + (p[1]-A[1])*dy)/L2 : 0;
-    t = Math.max(0, Math.min(1, t));
-    const d = Math.hypot(p[0]-(A[0]+t*dx), p[1]-(A[1]+t*dy));
-    if (d > dmax){ dmax = d; k = i; }
-  }
-  if (dmax > eps && k > 0){ rdp(ini, k, eps, out); rdp(k, fin, eps, out); }
-  else out.push(fin);
-}
-
-function calcular(){
-  const eps = +$('#desvio').value, gap = +$('#hueco').value;
-  const idx = [0]; rdp(0, T.length-1, eps, idx);
-
-  let ss = [...new Set(idx)].sort((a,b)=>a-b).map(i => cum[i]).map(s => ({s, man:false}))
-    .concat(manuales.map(s => ({s, man:true})));
-  ss.sort((a,b) => a.s - b.s);
-  /* al deduplicar, un ancla tuya desplaza a la automática que tenga al lado */
-  const ded = [ss[0]];
-  for (const x of ss.slice(1)){
-    const ult = ded[ded.length-1];
-    if (x.s - ult.s > 25) ded.push(x);
-    else if (x.man && !ult.man) ded[ded.length-1] = x;
-  }
-  if (largo() - ded[ded.length-1].s > 1) ded.push({s: largo(), man:false});
-
-  const out = [ded[0]];
-  for (const x of ded.slice(1)){
-    const d = x.s - out[out.length-1].s;
-    if (d > gap){
-      const n = Math.floor(d/gap), base = out[out.length-1].s;
-      for (let k=1;k<=n;k++) out.push({s: base + d*k/(n+1), man:false});
-    }
-    out.push(x);
-  }
-  wp = out.map(x => ({s: x.s, p: enS(x.s), man: x.man}));
-
-  tramos = [];
-  for (let i=0;i<wp.length-1;i+=10) tramos.push(wp.slice(i, Math.min(i+11, wp.length)));
-
-  $('#vDesvio').textContent = eps + ' m';
-  $('#vHueco').textContent = gap + ' m';
-  const hmax = Math.max(...wp.slice(1).map((w,i) => w.s - wp[i].s));
-  $('#densMsg').textContent = `${wp.length} anclas · hueco mayor ${Math.round(hmax)} m · `
-    + `${tramos.length} tramos cortos.`;
-  $('#cab').textContent = wp.length + ' anclas';
-  pintarTramos(); pintarLargos(); pintarRiesgos(); pintarMapa();
-}
-
-/* ---------------------------------------------------------------
-   URLs. avoid=highways es lo que impide el salto a la M-30 / A-6.
-   El formato /maps/dir/ con muchos puntos usa el dirflg heredado.
-   --------------------------------------------------------------- */
-const ll = w => `${w.p[0].toFixed(5)},${w.p[1].toFixed(5)}`;
-function evitar(){
-  const a = [];
-  if ($('#noAuto').checked) a.push('highways');
-  if ($('#noPeaje').checked) a.push('tolls');
-  return a;
-}
-function urlTramo(seg){
-  const medias = seg.slice(1,-1).slice(0,9);
-  let u = 'https://www.google.com/maps/dir/?api=1&travelmode=driving'
-        + `&origin=${ll(seg[0])}&destination=${ll(seg[seg.length-1])}`;
-  if (medias.length) u += `&waypoints=${medias.map(ll).join('|')}`;
-  const a = evitar();
-  if (a.length) u += `&avoid=${a.join('%2C')}`;
-  return u;
-}
-/* formato de ruta: admite muchos más puntos, pero tiene un techo desconocido
-   y no acepta avoid. dirflg es heredado y está sin confirmar: por eso va aparte. */
-function urlPath(pts, conFlag){
-  let f = '';
-  if (conFlag){
-    if ($('#noAuto').checked) f += 'h';
-    if ($('#noPeaje').checked) f += 't';
-  }
-  return 'https://www.google.com/maps/dir/' + pts.map(ll).join('/')
-       + (f ? '?dirflg=' + f : '');
-}
-
-/* cuánto se aparta la traza de la recta entre dos anclas */
-function desvioEntre(s0, s1){
-  const A = px(enS(s0)), B = px(enS(s1));
-  const dx = B[0]-A[0], dy = B[1]-A[1], L2 = dx*dx+dy*dy;
-  let mx = 0; const n = Math.max(2, Math.round((s1-s0)/25));
-  for (let k=0;k<=n;k++){
-    const p = px(enS(s0 + (s1-s0)*k/n));
-    let t = L2 ? ((p[0]-A[0])*dx + (p[1]-A[1])*dy)/L2 : 0;
-    t = Math.max(0, Math.min(1, t));
-    mx = Math.max(mx, Math.hypot(p[0]-(A[0]+t*dx), p[1]-(A[1]+t*dy)));
-  }
-  return mx;
-}
-/* quita anclas hasta el presupuesto, sacrificando siempre la menos necesaria */
-function adelgazar(lista, budget){
-  const L = lista.slice();
-  while (L.length > budget){
-    let peor = null;
-    for (let i=1;i<L.length-1;i++){
-      const c = desvioEntre(L[i-1].s, L[i+1].s);
-      if (peor === null || c < peor[0]) peor = [c, i];
-    }
-    L.splice(peor[1], 1);
-  }
-  return L;
-}
-/* parte las anclas en trozos del tamaño dado, solapando uno para no dejar huecos */
-function trozos(budget){
-  const out = [];
-  for (let i=0;i<wp.length-1;i+=budget-1)
-    out.push(wp.slice(i, Math.min(i+budget, wp.length)));
-  return out;
-}
-
-function pintarLargos(){
-  const b = +$('#porEnlace').value, ts = trozos(b);
-  $('#vPorEnlace').textContent = b;
-  $('#pLargos').innerHTML = `Formato de ruta, densidad completa (${wp.length} anclas) repartida `
-    + `en <b>${ts.length} ${ts.length===1?'enlace':'enlaces'}</b>. No admite prohibir autovías, `
-    + `pero con las anclas juntas no le hace falta.`;
-  $('#largos').innerHTML = ts.map((t,i) =>
-    `<button class="btn" onclick="window.open(urlPath(trozos(${b})[${i}],false),'_blank')">
-      ${ts.length===1 ? 'Abrir ruta' : 'Parte '+(i+1)} · km ${km(t[0].s)}–${km(t[t.length-1].s)}
-     </button>`).join('');
-  $('#largosMsg').textContent = `${ts.length} enlaces de hasta ${b} puntos `
-    + `(~${32 + b*19} caracteres cada uno).`;
-}
-
-function pintarTramos(){
-  $('#lista').innerHTML = tramos.map((seg,i) => {
-    const a = seg[0].s, b = seg[seg.length-1].s, done = !!hechos[i];
-    const now = !done && !tramos.some((_,j) => j<i && !hechos[j]);
-    return `<div class="tr ${done?'done':''} ${now?'now':''}">
-      <div class="g"><i>${i+1}</i></div>
-      <div class="c">
-        <h3>Tramo ${i+1} · ${km(b-a)} km</h3>
-        <div class="m">del km ${km(a)} al ${km(b)} · ${seg.length} anclas</div>
-        <div class="b">
-          <button class="go" onclick="window.open(urlTramo(tramos[${i}]),'_blank')">Abrir en Maps</button>
-          <button class="sm ck" onclick="marcar(${i})">${done?'Hecho':'Marcar'}</button>
-        </div>
-      </div></div>`;
-  }).join('');
-  const n = Object.values(hechos).filter(Boolean).length;
-  if (n) $('#sub').textContent = `${n} de ${tramos.length} tramos hechos`;
-}
-function marcar(i){ hechos[i] = !hechos[i]; pintarTramos(); guardar(); }
-
-function pintarRiesgos(){
-  const h = wp.slice(1).map((w,i) => ({d: w.s - wp[i].s, s: (w.s + wp[i].s)/2, ini: wp[i].s}))
-    .sort((a,b) => b.d - a.d).slice(0,5);
-  $('#riesgos').innerHTML = h.map(x =>
-    `<div class="riesgo"><b>${Math.round(x.d)} m</b>
-      <span>desde el km ${km(x.ini)}</span>
-      <button onclick="anclaEn(${x.s})">Anclar aquí</button></div>`).join('')
-    || '<p style="margin:0">Sin huecos que destaquen.</p>';
-}
-function anclaEn(s){
-  if (!manuales.some(m => Math.abs(m-s) < 30)) manuales.push(s);
-  manuales.sort((a,b)=>a-b); calcular(); guardar();
-}
-
-function diag(budget, conFlag, etiqueta){
-  const pts = budget >= wp.length ? wp : adelgazar(wp, budget);
-  const u = urlPath(pts, conFlag);
-  $('#msgDiag').innerHTML = `<div class="ok">${etiqueta}: ${pts.length} puntos, `
-    + `${u.length} caracteres. Si carga, apunta cuántos km te da: tu recorrido son `
-    + `${km(largo())} km.</div>`;
-  window.open(u, '_blank');
-}
-$('#dA').onclick = () => diag(70, false, 'A · sin dirflg');
-$('#dB').onclick = () => diag(70, true,  'B · con dirflg');
-$('#dC').onclick = () => diag(wp.length, false, 'C · densidad completa');
-$('#bLimpia').onclick = () => { manuales = []; calcular(); guardar(); };
-['#noAuto','#noPeaje'].forEach(s => $(s).onchange = () => { calcular(); guardar(); });
-['#desvio','#hueco'].forEach(s => $(s).oninput = () => { calcular(); guardar(); });
-$('#porEnlace').oninput = () => { pintarLargos(); guardar(); };
-
-/* ---------------- mapa ---------------- */
-let map, linea, marcas, yo, sigo = true, watch = null, modoAncla = false;
-function initMap(){
-  if (map) return;
-  map = L.map('mapa', {zoomControl:false});
-  L.control.zoom({position:'bottomright'}).addTo(map);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
-  linea = L.polyline(T, {color:'#0057A8', weight:6, opacity:.75}).addTo(map);
-  marcas = L.layerGroup().addTo(map);
-  map.on('dragstart', () => { sigo = false; $('#cSigo').setAttribute('aria-pressed','false'); });
-  map.on('click', e => {
-    if (!modoAncla) return;
-    const s = proyectar(e.latlng.lat, e.latlng.lng).s;
-    const cerca = manuales.findIndex(m => Math.abs(m-s) < 40);
-    if (cerca >= 0) manuales.splice(cerca, 1); else manuales.push(s);
-    manuales.sort((a,b)=>a-b); calcular(); guardar();
-  });
-  pintarMapa(); encuadrar();
-}
-function pintarMapa(){
-  if (!map) return;
-  linea.setLatLngs(T); marcas.clearLayers();
-  wp.forEach((w,i) => {
-    if (!w.man && i && i < wp.length-1)
-      return L.circleMarker(w.p, {radius:3, weight:0, fillColor:'#0057A8', fillOpacity:.6}).addTo(marcas);
-    const bg = w.man ? '#FFB000' : (i===0 ? '#12734A' : i===wp.length-1 ? '#B3301C' : '#0057A8');
-    const tx = w.man ? '' : (i===0 ? 'A' : i===wp.length-1 ? 'B' : '');
-    L.marker(w.p, {icon: L.divIcon({className:'', iconSize:[20,20],
-      html:`<div style="width:20px;height:20px;border-radius:50%;background:${bg};color:#fff;
-        font:700 11px/20px 'Barlow Condensed',sans-serif;text-align:center;
-        box-shadow:0 0 0 2px #fff">${tx}</div>`})})
-      .addTo(marcas).on('click', () => { if (modoAncla && w.man){
-        manuales = manuales.filter(m => Math.abs(m-w.s) > 1); calcular(); guardar(); } });
+function renderList(){
+  const ul=$("#list");
+  ul.innerHTML=STOPS.map((s,i)=>{
+    const cls=[state.done.has(s.n)?"done":"", i===state.cur?"cur":""].join(" ").trim();
+    return `<li class="${cls}" data-i="${i}">
+      <div class="ln">${String(s.n).padStart(3,"0")}</div>
+      <div class="lc"><div class="t">${s.calle}</div><div class="s">${s.crea}</div></div>
+      <div class="dot"></div></li>`;
+  }).join("");
+  ul.querySelectorAll("li").forEach(li=>li.onclick=()=>{
+    state.cur=+li.dataset.i; persist(); renderAll();
+    document.querySelector(".card").scrollIntoView({behavior:"smooth",block:"start"});
   });
 }
-function encuadrar(){ if (map) map.fitBounds(L.latLngBounds(T), {padding:[26,26]}); }
-$('#cFit').onclick = () => { sigo = false; $('#cSigo').setAttribute('aria-pressed','false'); encuadrar(); };
-$('#cSigo').onclick = e => { sigo = !sigo; e.target.setAttribute('aria-pressed', sigo);
-  if (sigo && yo) map.setView(yo.getLatLng(), Math.max(map.getZoom(), 16)); };
-$('#cAncla').onclick = e => { modoAncla = !modoAncla;
-  e.target.setAttribute('aria-pressed', modoAncla);
-  e.target.textContent = modoAncla ? 'Tocando el mapa…' : 'Poner ancla'; };
 
-function proyectar(lat, lon){
-  const q = px([lat,lon]); let best = {s:0, d:Infinity};
-  for (let i=0;i<T.length-1;i++){
-    const a = px(T[i]), b = px(T[i+1]);
-    const dx = b[0]-a[0], dy = b[1]-a[1], L2 = dx*dx+dy*dy;
-    let t = L2 ? ((q[0]-a[0])*dx+(q[1]-a[1])*dy)/L2 : 0;
-    t = Math.max(0, Math.min(1, t));
-    const d = Math.hypot(q[0]-(a[0]+t*dx), q[1]-(a[1]+t*dy));
-    if (d < best.d) best = {s: cum[i] + t*Math.hypot(dx,dy), d};
-  }
-  return best;
-}
+function renderAll(){ renderCard(); renderProgress(); renderList(); }
 
-$('#cGps').onclick = e => {
-  if (watch !== null){
-    navigator.geolocation.clearWatch(watch); watch = null;
-    e.target.setAttribute('aria-pressed','false'); e.target.textContent = 'Activar GPS';
-    $('#aviso').classList.remove('on'); return;
-  }
-  if (!navigator.geolocation){ alert('Este navegador no da posición.'); return; }
-  e.target.setAttribute('aria-pressed','true'); e.target.textContent = 'GPS activo';
-  watch = navigator.geolocation.watchPosition(pos => {
-    const {latitude:la, longitude:lo, speed} = pos.coords;
-    if (!yo) yo = L.circleMarker([la,lo], {radius:9, color:'#fff', weight:3,
-      fillColor:'#B3301C', fillOpacity:1}).addTo(map);
-    else yo.setLatLng([la,lo]);
-    if (sigo) map.setView([la,lo], Math.max(map.getZoom(), 16));
-    const p = proyectar(la, lo);
-    $('#kHecho').textContent = km(p.s);
-    $('#hRest').textContent = km(largo()-p.s);
-    $('#hDesv').textContent = Math.round(p.d);
-    $('#hVel').textContent = speed != null ? Math.round(speed*3.6) : '–';
-    $('#barra').style.width = (p.s/largo()*100) + '%';
-    $('#sub').textContent = 'En ruta';
-    const fuera = p.d > 60;
-    $('#aviso').classList.toggle('on', fuera);
-    if (fuera) $('#aviso').textContent = `Fuera del recorrido · ${Math.round(p.d)} m de la línea`;
-  }, err => { $('#aviso').classList.add('on');
-    $('#aviso').textContent = 'Sin señal de GPS: ' + err.message; },
-  {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
-};
+$("#listhead").onclick=()=>{ $("#list").classList.toggle("open"); $("#listhead").classList.toggle("open"); };
+$("#reset").onclick=()=>{ if(confirm("¿Reiniciar el progreso de la ruta?")){ state={done:new Set(),cur:0}; persist(); renderAll(); } };
 
-function irA(v){
-  document.querySelectorAll('.view').forEach(s => s.classList.remove('on'));
-  $('#v-'+v).classList.add('on');
-  document.querySelectorAll('nav button').forEach(b =>
-    b.setAttribute('aria-current', String(b.dataset.v === v)));
-  if (v === 'seguir'){ initMap(); setTimeout(() => map.invalidateSize(), 60); }
-}
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => irA(b.dataset.v));
-
-/* ---------------- exportar ---------------- */
-function bajar(n, txt, tipo){
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([txt], {type:tipo}));
-  a.download = n; a.click(); URL.revokeObjectURL(a.href);
-}
-$('#bGpx').onclick = () => bajar('recorrido.gpx',
-  `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Seguir recorrido" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${$('#nom').textContent}</name><trkseg>\n`
-  + T.map(p => `<trkpt lat="${p[0]}" lon="${p[1]}"></trkpt>`).join('\n')
-  + `\n</trkseg></trk>\n</gpx>`, 'application/gpx+xml');
-$('#bKml').onclick = () => bajar('recorrido.kml',
-  `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>${$('#nom').textContent}</name><LineString><tessellate>1</tessellate><coordinates>`
-  + T.map(p => `${p[1]},${p[0]},0`).join(' ')
-  + `</coordinates></LineString></Placemark></Document></kml>`,
-  'application/vnd.google-earth.kml+xml');
-
-$('#fGpx').onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
-  const doc = new DOMParser().parseFromString(await f.text(), 'text/xml');
-  const pts = [...doc.getElementsByTagName('trkpt')].map(p =>
-    [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))]);
-  if (pts.length < 2){ alert('Ese GPX no trae traza (<trkpt>).'); return; }
-  hechos = {}; manuales = []; yo = null;
-  setTrack(simplificar(pts, 8), f.name.replace(/\.gpx$/i,''));
-  if (map) encuadrar();
-  guardar();
-};
-$('#bReset').onclick = () => { hechos = {}; manuales = [];
-  setTrack(pares(TRACK_FLAT), 'Viernes · Pista'); if (map) encuadrar(); guardar(); };
-
-function simplificar(P, eps){
-  if (P.length < 3) return P;
-  const kx = 111320*Math.cos(P[0][0]*D), q = p => [p[1]*kx, p[0]*111320];
-  const rec = (ini, fin) => {
-    const A = q(P[ini]), B = q(P[fin]);
-    const dx = B[0]-A[0], dy = B[1]-A[1], L2 = dx*dx+dy*dy;
-    let dmax = 0, idx = -1;
-    for (let i=ini+1;i<fin;i++){
-      const p = q(P[i]);
-      let t = L2 ? ((p[0]-A[0])*dx+(p[1]-A[1])*dy)/L2 : 0;
-      t = Math.max(0, Math.min(1, t));
-      const d = Math.hypot(p[0]-(A[0]+t*dx), p[1]-(A[1]+t*dy));
-      if (d > dmax){ dmax = d; idx = i; }
-    }
-    if (dmax > eps && idx > 0) return [...rec(ini, idx).slice(0,-1), ...rec(idx, fin)];
-    return [P[ini], P[fin]];
-  };
-  return rec(0, P.length-1);
-}
-
-/* ---------------- guardado ---------------- */
-async function guardar(){
-  try{ if (window.storage) await window.storage.set('seguir-recorrido', JSON.stringify({
-    T, hechos, manuales, nom: $('#nom').textContent,
-    desvio: $('#desvio').value, hueco: $('#hueco').value, porEnlace: $('#porEnlace').value,
-    noAuto: $('#noAuto').checked, noPeaje: $('#noPeaje').checked })); }catch(e){}
-}
-async function cargar(){
-  try{
-    if (window.storage){
-      const r = await window.storage.get('seguir-recorrido');
-      if (r && r.value){
-        const d = JSON.parse(r.value);
-        hechos = d.hechos || {}; manuales = d.manuales || [];
-        if (d.desvio) $('#desvio').value = d.desvio;
-        if (d.hueco) $('#hueco').value = d.hueco;
-        if (d.porEnlace) $('#porEnlace').value = d.porEnlace;
-        if (d.noAuto !== undefined) $('#noAuto').checked = d.noAuto;
-        if (d.noPeaje !== undefined) $('#noPeaje').checked = d.noPeaje;
-        if (d.T && d.T.length > 1){ setTrack(d.T, d.nom); return true; }
-      }
-    }
-  }catch(e){}
-  return false;
-}
-
-const pares = f => { const o=[]; for (let i=0;i<f.length;i+=2) o.push([f[i], f[i+1]]); return o; };
-(async () => {
-  if (!await cargar()) setTrack(pares(TRACK_FLAT), 'Viernes · Pista');
-  initMap();
-})();
+renderAll();
 </script>
+</body>
+</html>
