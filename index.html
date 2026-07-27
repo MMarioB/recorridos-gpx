@@ -91,14 +91,14 @@ let state=load();state.done=new Set(state.done||[]);if(typeof state.z!=="number"
 const $=s=>document.querySelector(s);
 const persist=()=>save({done:[...state.done],z:state.z});
 const C=s=>s.lat+","+s.lng;
-const single=s=>"https://www.google.com/maps/dir/?api=1&destination="+C(s)+"&travelmode=driving";
+const single=s=>"https://www.google.com/maps/dir/?api=1&destination="+C(s)+"&travelmode=driving&dir_action=navigate";
 function zoneURL(z){
   const pts=ZONES[z];
   const origin=C(pts[0]), destination=C(pts[pts.length-1]);
   const way=pts.slice(1,-1).map(C).join("|");
   let u="https://www.google.com/maps/dir/?api=1&origin="+origin+"&destination="+destination+"&travelmode=driving";
   if(way) u+="&waypoints="+encodeURIComponent(way);
-  return u;
+  return u+"&dir_action=navigate";
 }
 function tag(v){return v==="Yes"?["t-new","Nueva"]:v==="No"?["t-no","No"]:["t-carr","Continúa"];}
 function firstUnfinishedZone(){for(let i=0;i<ZONES.length;i++)if(ZONES[i].some(s=>!state.done.has(s.n)))return i;return ZONES.length-1;}
